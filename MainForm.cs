@@ -111,7 +111,11 @@ public class MainForm : Form
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "VRCNext", "ImageCache");
         Directory.CreateDirectory(imgCacheDir);
-        _imgCache = new ImageCacheService(imgCacheDir, _vrcApi.GetHttpClient());
+        _imgCache = new ImageCacheService(imgCacheDir, _vrcApi.GetHttpClient())
+        {
+            Enabled    = _settings.ImgCacheEnabled,
+            LimitBytes = (long)_settings.ImgCacheLimitGb * 1024 * 1024 * 1024,
+        };
         _webView.CoreWebView2.SetVirtualHostNameToFolderMapping(
             ImageCacheService.VirtualHost, imgCacheDir, CoreWebView2HostResourceAccessKind.Allow);
 
@@ -3993,6 +3997,18 @@ public class MainForm : Form
             _settings.SfUseGrip = data["sfUseGrip"]?.Value<bool>() ?? true;
             _settings.ChatboxAutoStart = data["chatboxAutoStart"]?.Value<bool>() ?? false;
             _settings.SfAutoStart = data["sfAutoStart"]?.Value<bool>() ?? false;
+
+            // Image cache settings
+            _settings.ImgCacheEnabled  = data["imgCacheEnabled"]?.Value<bool>() ?? true;
+            _settings.ImgCacheLimitGb  = data["imgCacheLimitGb"]?.Value<int>()  ?? 5;
+            if (_imgCache != null)
+            {
+                _imgCache.Enabled    = _settings.ImgCacheEnabled;
+                _imgCache.LimitBytes = (long)_settings.ImgCacheLimitGb * 1024 * 1024 * 1024;
+                // Apply limit immediately — don't wait for the next download
+                if (_settings.ImgCacheEnabled && _imgCache.LimitBytes > 0)
+                    _ = Task.Run(() => _imgCache.TrimIfNeeded(_imgCache.LimitBytes));
+            }
 
             _settings.Save();
             if (_settings.LastSaveError != null)

@@ -860,7 +860,7 @@ body {
 
 /* === SETTINGS === */
 .settings-inner {
-    max-width: 620px;
+    width: 100%;
 }
 
 .set-desc {

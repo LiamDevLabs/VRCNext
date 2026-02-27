@@ -13,7 +13,16 @@ public class ImageCacheService
     private readonly HashSet<string> _inFlight = new();
     private static readonly TimeSpan TTL = TimeSpan.FromDays(7);
 
+    // Amount freed per trim pass (~2 GB)
+    private const long TrimPassBytes = 2L * 1024 * 1024 * 1024;
+
     public const string VirtualHost = "imgcache.vrcnext.local";
+
+    /// <summary>When false, Get() always returns the original URL and no files are written.</summary>
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>Maximum cache size in bytes. 0 = unlimited. Trim runs after each download.</summary>
+    public long LimitBytes { get; set; } = 5L * 1024 * 1024 * 1024;
 
     public ImageCacheService(string cacheDir, HttpClient http)
     {
@@ -25,10 +34,12 @@ public class ImageCacheService
     /// <summary>
     /// Returns a local virtual-host URL if the image is already cached,
     /// otherwise returns the original URL and starts a background download.
+    /// When caching is disabled, always returns the original URL.
     /// </summary>
     public string Get(string? url)
     {
         if (string.IsNullOrWhiteSpace(url) || !url.StartsWith("http")) return url ?? "";
+        if (!Enabled) return url;
 
         var fileName = GetFileName(url);
         var filePath = Path.Combine(_dir, fileName);
@@ -39,6 +50,48 @@ public class ImageCacheService
         // Start background download; caller gets original URL this time
         _ = DownloadAsync(url, filePath);
         return url;
+    }
+
+    /// <summary>
+    /// Returns the current total size of the cache directory in bytes.
+    /// </summary>
+    public long GetCacheSizeBytes()
+    {
+        if (!Directory.Exists(_dir)) return 0;
+        return new DirectoryInfo(_dir)
+            .GetFiles("*", SearchOption.TopDirectoryOnly)
+            .Where(f => !f.Name.EndsWith(".tmp"))
+            .Sum(f => f.Length);
+    }
+
+    /// <summary>
+    /// Deletes the oldest cached files until at least <see cref="TrimPassBytes"/> have been freed,
+    /// or until the total size is below <paramref name="limitBytes"/>.
+    /// Called automatically after each successful download when a limit is set.
+    /// </summary>
+    public void TrimIfNeeded(long limitBytes)
+    {
+        if (limitBytes <= 0 || !Directory.Exists(_dir)) return;
+        try
+        {
+            var files = new DirectoryInfo(_dir)
+                .GetFiles("*", SearchOption.TopDirectoryOnly)
+                .Where(f => !f.Name.EndsWith(".tmp"))
+                .OrderBy(f => f.LastWriteTimeUtc)   // oldest first
+                .ToList();
+
+            var total = files.Sum(f => f.Length);
+            if (total <= limitBytes) return;
+
+            // Free TrimPassBytes worth of old files to create breathing room
+            long freed = 0;
+            foreach (var f in files)
+            {
+                if (freed >= TrimPassBytes) break;
+                try { freed += f.Length; f.Delete(); } catch { }
+            }
+        }
+        catch { }
     }
 
     private async Task DownloadAsync(string url, string filePath)
@@ -56,6 +109,10 @@ public class ImageCacheService
             var bytes = await resp.Content.ReadAsByteArrayAsync();
             await File.WriteAllBytesAsync(tmp, bytes);
             File.Move(tmp, filePath, overwrite: true);
+
+            // Enforce cache limit in background after each write
+            if (LimitBytes > 0)
+                _ = Task.Run(() => TrimIfNeeded(LimitBytes));
         }
         catch { }
         finally

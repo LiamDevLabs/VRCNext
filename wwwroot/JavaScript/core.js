@@ -3,7 +3,17 @@ let favorites = new Set(), showFavOnly = false, libraryFiles = [];
 let hiddenMedia = new Set();
 try { hiddenMedia = new Set(JSON.parse(localStorage.getItem('vrcnext_hidden') || '[]')); } catch {}
 const thumbCache = {};
-let currentTheme = 'midnight', notifyAudio = null, currentVrcUser = null, sidebarCollapsed = false;
+let currentTheme = 'midnight', notifyAudio = null, currentVrcUser = null;
+let sidebarCollapsed = localStorage.getItem('vrcnext_sidebar') === '1';
+// Apply saved sidebar state immediately on load
+(function() {
+    const sidebar = document.getElementById('sidebarEl');
+    if (sidebar && sidebarCollapsed) {
+        sidebar.classList.add('collapsed');
+        const icon = document.getElementById('sbIcon');
+        if (icon) icon.textContent = 'menu';
+    }
+})();
 let dashBgPath = '', dashBgDataUri = '', dashOpacity = 40;
 let dashWorldCache = {};
 let vrcFriendsLoaded = false;
@@ -102,6 +112,7 @@ function sk(type, n = 1) {
 
 function toggleSidebar() {
     sidebarCollapsed = !sidebarCollapsed;
+    localStorage.setItem('vrcnext_sidebar', sidebarCollapsed ? '1' : '0');
     const sidebar = document.getElementById('sidebarEl');
     document.getElementById('sbIcon').textContent = sidebarCollapsed ? 'menu' : 'menu_open';
     if (sidebarCollapsed) {

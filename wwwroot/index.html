@@ -315,6 +315,24 @@
                         <button class="btn-f" onclick="sendToCS({action:'resetSetup'})"><span class="msi" style="font-size:16px;">restart_alt</span> Redo Setup Wizard</button>
                     </div>
 
+                    <!-- IMAGE CACHE -->
+                    <div class="sf-card">
+                        <div class="sf-card-header"><span class="msi">cached</span> Image Cache</div>
+                        <div class="set-desc">VRCNext caches avatar, world, and profile images locally for instant loading. Over time this can grow to several gigabytes. Set a limit and the oldest cached images will be removed automatically when it is reached (~2 GB per cleanup pass).</div>
+                        <div class="sf-toggle-row">
+                            <span>Enable image caching</span>
+                            <label class="toggle"><input type="checkbox" id="setImgCacheEnabled" checked onchange="updateImgCacheUi();autoSave()"><div class="toggle-track"><div class="toggle-knob"></div></div></label>
+                        </div>
+                        <div id="imgCacheLimitRow" style="margin-top:12px;">
+                            <div class="sf-row">
+                                <label style="font-size:12px;color:var(--tx2);flex-shrink:0;margin-right:10px;">Max Cache Size</label>
+                                <input type="range" id="setImgCacheLimit" min="1" max="15" step="1" value="5" style="flex:1;accent-color:var(--accent);" oninput="document.getElementById('imgCacheLimitVal').textContent=this.value+' GB';autoSave()">
+                                <span id="imgCacheLimitVal" style="font-size:12px;color:var(--tx2);margin-left:10px;min-width:44px;text-align:right;">5 GB</span>
+                            </div>
+                            <div style="font-size:10px;color:var(--tx3);margin-top:6px;">When the limit is reached, the oldest ~2 GB of cached images are removed automatically.</div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
             <!-- Tab 10: Space Flight -->

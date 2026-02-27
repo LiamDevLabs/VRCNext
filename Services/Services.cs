@@ -226,6 +226,10 @@ public class AppSettings
     public bool ChatboxAutoStart { get; set; }
     public bool SfAutoStart { get; set; }
 
+    // Image cache settings
+    public bool ImgCacheEnabled { get; set; } = true;
+    public int ImgCacheLimitGb { get; set; } = 5;
+
     public bool SetupComplete { get; set; }
 
     public class WebhookSlot

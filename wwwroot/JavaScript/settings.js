@@ -120,7 +120,9 @@ function saveSettings() {
             sfRightHand: document.getElementById('sfRightHand').checked,
             sfUseGrip: document.getElementById('sfUseGrip').checked,
             chatboxAutoStart: document.getElementById('setCbAutoStart').checked,
-            sfAutoStart: document.getElementById('setSfAutoStart').checked
+            sfAutoStart: document.getElementById('setSfAutoStart').checked,
+            imgCacheEnabled: document.getElementById('setImgCacheEnabled').checked,
+            imgCacheLimitGb: parseInt(document.getElementById('setImgCacheLimit').value) || 5
         }
     };
     sendToCS(payload);
@@ -136,7 +138,8 @@ function autoSave() {
 function initAutoSave() {
     const ids = ['setBotName','setBotAvatar','setVrcPath','setAutoStart',
         'setNotifySound','setDashOpacity','setRandomBg',
-        'setVrcUser','setVrcPass','setCbAutoStart','setSfAutoStart'];
+        'setVrcUser','setVrcPass','setCbAutoStart','setSfAutoStart',
+        'setImgCacheEnabled','setImgCacheLimit'];
     ids.forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -235,6 +238,19 @@ function loadSettingsToUI(s) {
     if (_cbAutoStart && !chatboxEnabled) setTimeout(() => toggleChatbox(), 300);
     if (_sfAutoStart) setTimeout(() => sfConnect(), 400);
 
+    // Image cache settings
+    const imgCacheEnabled = s.ImgCacheEnabled ?? s.imgCacheEnabled ?? true;
+    const imgCacheLimitGb = s.ImgCacheLimitGb ?? s.imgCacheLimitGb ?? 5;
+    document.getElementById('setImgCacheEnabled').checked = imgCacheEnabled;
+    document.getElementById('setImgCacheLimit').value = imgCacheLimitGb;
+    document.getElementById('imgCacheLimitVal').textContent = imgCacheLimitGb + ' GB';
+    updateImgCacheUi();
+
     // Setup autosave listeners after UI is populated
     setTimeout(initAutoSave, 100);
+}
+
+function updateImgCacheUi() {
+    const enabled = document.getElementById('setImgCacheEnabled').checked;
+    document.getElementById('imgCacheLimitRow').style.display = enabled ? '' : 'none';
 }
