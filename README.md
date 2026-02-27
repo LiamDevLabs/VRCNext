@@ -124,3 +124,26 @@ Design:
 Misc:
 
 * Activity Log shows everything that happens, including API calls, debugging, and more
+
+---
+
+## License
+
+VRCNext is licensed under the **VRCNext Non-Commercial Open Source License (VNCOL) 1.0**.
+
+| Permission | Allowed |
+|---|---|
+| Personal & private use | ✅ |
+| Modify the source code | ✅ |
+| Distribute copies | ✅ |
+| Create forks / derivative works | ✅ |
+| Sublicense under the same terms | ✅ |
+| Sell the software or any fork | ❌ |
+| Use in a commercial product or service | ❌ |
+| Place behind a paywall | ❌ |
+| Generate revenue from it (directly or indirectly) | ❌ |
+| Fork without crediting all contributors | ❌ |
+
+> Forks must visibly credit **all contributors** of the original project (e.g. in the README or a CREDITS file).
+
+See [LICENSE](LICENSE) for the full license text.
