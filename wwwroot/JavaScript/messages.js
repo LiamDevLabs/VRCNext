@@ -32,6 +32,7 @@ if (window.chrome?.webview) {
                 autoSave();
                 break;
             case 'libraryData': renderLibrary(payload); break;
+            case 'libraryPageData': appendLibraryPage(payload); break;
             case 'libraryFileDeleted':
                 libraryFiles = libraryFiles.filter(f => f.path !== payload.path);
                 filterLibrary();

@@ -1182,12 +1182,16 @@ body {
 
 /* === LIBRARY === */
 .lib-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill,minmax(180px,1fr));
-    gap: 12px;
+    display: block;
     max-height: calc(100vh - 180px);
     overflow-y: auto;
     padding-bottom: 20px;
+}
+.lib-date-group-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 8px;
 }
 
 .lib-card {
@@ -1508,8 +1512,12 @@ body {
     align-items: center;
 }
 
-.lib-date-group {
+.lib-date-group-container {
     grid-column: 1/-1;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 400px;
+}
+.lib-date-group {
     font-size: 12px;
     font-weight: 700;
     color: var(--tx2);

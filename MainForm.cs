@@ -50,6 +50,11 @@ public class MainForm : Form
     // User detail cache: serves profiles instantly on repeated opens
     private readonly Dictionary<string, (object payload, DateTime cachedAt)> _userDetailCache = new();
 
+    // Library file cache: quick-scan result for pagination
+    private record LibFileEntry(FileInfo Fi, string Host, string Folder);
+    private List<LibFileEntry> _libFileCache = new();
+    private int _libFileCacheTotal = 0;
+
     // Timeline: cumulative instance player tracking
     private readonly Dictionary<string, (string displayName, string image)> _cumulativeInstancePlayers = new();
     private readonly HashSet<string>   _meetAgainThisInstance = new();
@@ -349,6 +354,21 @@ public class MainForm : Form
 
                 case "scanLibrary":
                     ScanLibraryFolders();
+                    break;
+
+                case "loadLibraryPage":
+                    var libOffset = msg["offset"]?.Value<int>() ?? 0;
+                    _ = Task.Run(() =>
+                    {
+                        var items = BuildLibraryItems(libOffset, 100);
+                        Invoke(() => SendToJS("libraryPageData", new
+                        {
+                            files = items,
+                            total = _libFileCacheTotal,
+                            offset = libOffset,
+                            hasMore = libOffset + items.Count < _libFileCacheTotal,
+                        }));
+                    });
                     break;
 
                 case "deleteLibraryFile":
@@ -2791,6 +2811,7 @@ public class MainForm : Form
                     location = location,
                     platform = platform,
                     presence = isInGame ? "game" : "web",
+                    tags = f["tags"]?.ToObject<List<string>>() ?? new(),
                 };
             }).ToList();
 
@@ -2806,6 +2827,7 @@ public class MainForm : Form
                     location = "offline",
                     platform = f["last_platform"]?.ToString() ?? "",
                     presence = "offline",
+                    tags = f["tags"]?.ToObject<List<string>>() ?? new(),
                 }).ToList();
 
             // Sort: in-game first (by status), then web-active (by status), then offline
@@ -3984,11 +4006,9 @@ public class MainForm : Form
         {
             try
             {
-                var allMedia = new List<object>();
                 var allExts = FileWatcherService.ImgExt.Concat(FileWatcherService.VidExt).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var entries = new List<LibFileEntry>();
 
-                // Use same indexing as UpdateVirtualHostMappings: iterate ALL WatchFolders
-                // so that folder index i matches the virtual host "localmedia{i}.vrcnext.local"
                 for (int fi = 0; fi < _settings.WatchFolders.Count; fi++)
                 {
                     var folder = _settings.WatchFolders[fi];
@@ -3996,83 +4016,84 @@ public class MainForm : Form
                     var host = $"localmedia{fi}.vrcnext.local";
                     try
                     {
-                        var dirInfo = new DirectoryInfo(folder);
-                        var files = dirInfo.EnumerateFiles("*.*", SearchOption.AllDirectories)
+                        new DirectoryInfo(folder)
+                            .EnumerateFiles("*.*", SearchOption.AllDirectories)
                             .Where(f => allExts.Contains(f.Extension))
-                            .OrderByDescending(f => f.LastWriteTime)
-                            .Take(500);
-
-                        foreach (var f in files)
-                        {
-                            var isImg = FileWatcherService.ImgExt.Contains(f.Extension);
-                            var sizeMB = f.Length / 1048576.0;
-                            var relPath = Path.GetRelativePath(folder, f.FullName).Replace('\\', '/');
-                            var virtualUrl = $"https://{host}/{Uri.EscapeDataString(relPath).Replace("%2F", "/")}";
-
-                            string? photoWorldId = null;
-                            List<object>? photoPlayers = null;
-                            if (isImg)
-                            {
-                                // VRChat PNGs may have world ID embedded in file metadata
-                                if (f.Extension.Equals(".png", StringComparison.OrdinalIgnoreCase))
-                                    try { photoWorldId = WorldTimeTracker.ExtractWorldIdFromPng(f.FullName); }
-                                    catch { }
-
-                                // Look up PhotoPlayersStore for ALL images (not just VRChat screenshots)
-                                var rec = _photoPlayersStore.GetPhotoRecord(f.Name);
-                                if (rec == null && (DateTime.Now - f.LastWriteTime).TotalHours < 24)
-                                {
-                                    try
-                                    {
-                                        Invoke(() => SnapshotPhotoPlayers(f.FullName));
-                                        rec = _photoPlayersStore.GetPhotoRecord(f.Name);
-                                    }
-                                    catch { }
-                                }
-
-                                if (rec != null)
-                                {
-                                    if (string.IsNullOrEmpty(photoWorldId) && !string.IsNullOrEmpty(rec.WorldId))
-                                        photoWorldId = rec.WorldId;
-                                    photoPlayers = rec.Players.Select(p => (object)new {
-                                        userId = p.UserId,
-                                        displayName = p.DisplayName,
-                                        image = p.Image,
-                                    }).ToList();
-                                }
-                            }
-
-                            allMedia.Add(new
-                            {
-                                name = f.Name,
-                                path = f.FullName,
-                                folder = folder,
-                                type = isImg ? "image" : "video",
-                                size = sizeMB < 1 ? $"{f.Length / 1024.0:F0} KB" : $"{sizeMB:F1} MB",
-                                modified = f.LastWriteTime.ToString("o"),
-                                time = f.LastWriteTime.ToString("HH:mm"),
-                                url = virtualUrl,
-                                worldId = photoWorldId ?? "",
-                                players = photoPlayers ?? new List<object>(),
-                            });
-                        }
+                            .ToList()
+                            .ForEach(f => entries.Add(new LibFileEntry(f, host, folder)));
                     }
                     catch { }
                 }
 
-                var sorted = allMedia.OrderByDescending(m =>
-                {
-                    var jObj = Newtonsoft.Json.Linq.JObject.FromObject(m);
-                    return DateTime.Parse(jObj["modified"]!.ToString());
-                }).Take(1000).ToList();
+                // Sort all by newest first, store cache
+                var sorted = entries.OrderByDescending(e => e.Fi.LastWriteTime).ToList();
+                _libFileCache = sorted;
+                _libFileCacheTotal = sorted.Count;
 
-                Invoke(() => SendToJS("libraryData", sorted));
+                var firstPage = BuildLibraryItems(0, 100);
+                Invoke(() => SendToJS("libraryData", new
+                {
+                    files = firstPage,
+                    total = _libFileCacheTotal,
+                    offset = 0,
+                    hasMore = _libFileCacheTotal > 100,
+                }));
             }
             catch (Exception ex)
             {
                 Invoke(() => SendToJS("log", new { msg = $"Library scan error: {ex.Message}", color = "err" }));
             }
         });
+    }
+
+    private List<object> BuildLibraryItems(int offset, int count)
+    {
+        var result = new List<object>();
+        var slice = _libFileCache.Skip(offset).Take(count);
+        foreach (var e in slice)
+        {
+            var f = e.Fi;
+            var isImg = FileWatcherService.ImgExt.Contains(f.Extension);
+            var sizeMB = f.Length / 1048576.0;
+            var relPath = Path.GetRelativePath(e.Folder, f.FullName).Replace('\\', '/');
+            var virtualUrl = $"https://{e.Host}/{Uri.EscapeDataString(relPath).Replace("%2F", "/")}";
+
+            string? photoWorldId = null;
+            List<object>? photoPlayers = null;
+            if (isImg)
+            {
+                if (f.Extension.Equals(".png", StringComparison.OrdinalIgnoreCase))
+                    try { photoWorldId = WorldTimeTracker.ExtractWorldIdFromPng(f.FullName); } catch { }
+
+                var rec = _photoPlayersStore.GetPhotoRecord(f.Name);
+                if (rec == null && (DateTime.Now - f.LastWriteTime).TotalHours < 24)
+                {
+                    try { Invoke(() => SnapshotPhotoPlayers(f.FullName)); rec = _photoPlayersStore.GetPhotoRecord(f.Name); }
+                    catch { }
+                }
+                if (rec != null)
+                {
+                    if (string.IsNullOrEmpty(photoWorldId) && !string.IsNullOrEmpty(rec.WorldId))
+                        photoWorldId = rec.WorldId;
+                    photoPlayers = rec.Players.Select(p => (object)new { userId = p.UserId, displayName = p.DisplayName, image = p.Image }).ToList();
+                }
+            }
+
+            result.Add(new
+            {
+                name = f.Name,
+                path = f.FullName,
+                folder = e.Folder,
+                type = isImg ? "image" : "video",
+                size = sizeMB < 1 ? $"{f.Length / 1024.0:F0} KB" : $"{sizeMB:F1} MB",
+                modified = f.LastWriteTime.ToString("o"),
+                time = f.LastWriteTime.ToString("HH:mm"),
+                url = virtualUrl,
+                worldId = photoWorldId ?? "",
+                players = photoPlayers ?? new List<object>(),
+            });
+        }
+        return result;
     }
 
     // Settings

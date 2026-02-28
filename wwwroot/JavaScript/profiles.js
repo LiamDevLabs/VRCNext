@@ -376,7 +376,9 @@ function renderVrcFriends(friends, counts) {
         const fid = (f.id || '').replace(/'/g, "\\'");
         const dotClass = presenceType === 'web' ? 'vrc-status-ring' : 'vrc-status-dot';
         const statusCls = presenceType === 'offline' ? 's-offline' : statusDotClass(f.status);
-        return `<div class="vrc-friend-card" onclick="openFriendDetail('${fid}')">${imgTag}<div class="vrc-friend-info"><div class="vrc-friend-name"><span class="${dotClass} ${statusCls}" style="width:6px;height:6px;"></span>${esc(f.displayName)}</div><div class="vrc-friend-loc">${esc(f.statusDescription || statusLabel(f.status))} · ${esc(loc)}</div></div></div>`;
+        const rank = getTrustRank(f.tags || []);
+        const rankBadge = rank ? `<span class="fd-badge" style="background:${rank.color}22;color:${rank.color};padding:1px 5px;font-size:9px;border-radius:4px;flex-shrink:0;">${rank.label}</span>` : '';
+        return `<div class="vrc-friend-card" onclick="openFriendDetail('${fid}')">${imgTag}<div class="vrc-friend-info"><div class="vrc-friend-name" style="display:flex;align-items:center;gap:5px;"><span class="${dotClass} ${statusCls}" style="width:6px;height:6px;flex-shrink:0;"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(f.displayName)}</span>${rankBadge}</div><div class="vrc-friend-loc">${esc(f.statusDescription || statusLabel(f.status))} · ${esc(loc)}</div></div></div>`;
     }
 
     if (gameFriends.length > 0) {

@@ -20,7 +20,8 @@
       "Bash(dotnet build VRCNext.csproj --no-restore -v quiet)",
       "Bash(grep -n \"sf-card\\\\|cb-card\\\\|toggle\\\\|slider\\\\|settings-inner\\\\|set-section\\\\|set-label\\\\|set-row\" /c/Users/Johns/Documents/GitHub/VRCNext/wwwroot/Styles/*.css)",
       "Bash(grep -n \"settings-inner\\\\|sect-label\\\\|opts-row\" /c/Users/Johns/Documents/GitHub/VRCNext/wwwroot/Styles/*.css)",
-      "Bash(dotnet build --no-restore)"
+      "Bash(dotnet build --no-restore)",
+      "Bash(wc -l c:/Users/Johns/Documents/GitHub/VRCNext/wwwroot/JavaScript/*.js)"
     ]
   }
 }
