@@ -181,17 +181,20 @@ function tryLoadLogo() {
         el.textContent = '';
         el.style.background = 'transparent';
         const canvas = document.createElement('canvas');
-        canvas.width = 34; canvas.height = 34;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = 34 * dpr; canvas.height = 34 * dpr;
         canvas.style.cssText = 'width:100%;height:100%;';
         el.appendChild(canvas);
         el._repaintLogo = () => {
             const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#3884FF';
             const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, 34, 34);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = accent;
-            ctx.fillRect(0, 0, 34, 34);
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.globalCompositeOperation = 'destination-in';
-            ctx.drawImage(i, 0, 0, 34, 34);
+            ctx.drawImage(i, 0, 0, canvas.width, canvas.height);
             ctx.globalCompositeOperation = 'source-over';
         };
         el._repaintLogo();

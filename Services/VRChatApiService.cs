@@ -754,6 +754,19 @@ public class VRChatApiService
         return new JArray();
     }
 
+    public async Task<JArray> GetUserBadgesAsync(string userId)
+    {
+        if (!IsLoggedIn || string.IsNullOrEmpty(userId)) return new JArray();
+        try
+        {
+            var resp = await _http.GetAsync($"{BASE}/users/{Uri.EscapeDataString(userId)}/badges");
+            if (resp.IsSuccessStatusCode) return JArray.Parse(await resp.Content.ReadAsStringAsync());
+            Log($"GetUserBadges({userId}) failed: {(int)resp.StatusCode}");
+        }
+        catch (Exception ex) { Log($"GetUserBadges({userId}) exception: {ex.Message}"); }
+        return new JArray();
+    }
+
     public async Task<JArray> GetUserWorldsAsync(string userId)
     {
         if (!IsLoggedIn || string.IsNullOrEmpty(userId)) return new JArray();

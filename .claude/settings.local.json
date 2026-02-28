@@ -22,7 +22,19 @@
       "Bash(grep -n \"settings-inner\\\\|sect-label\\\\|opts-row\" /c/Users/Johns/Documents/GitHub/VRCNext/wwwroot/Styles/*.css)",
       "Bash(dotnet build --no-restore)",
       "Bash(wc -l c:/Users/Johns/Documents/GitHub/VRCNext/wwwroot/JavaScript/*.js)",
-      "WebFetch(domain:gist.github.com)"
+      "WebFetch(domain:gist.github.com)",
+      "Bash(magick \"c:\\\\Users\\\\Johns\\\\Documents\\\\GitHub\\\\VRCNext\\\\wwwroot\\\\logo.png\" -define icon:auto-resize=256,128,64,48,32,16 \"c:\\\\Users\\\\Johns\\\\Documents\\\\GitHub\\\\VRCNext\\\\logo.ico\")",
+      "Bash(where ffmpeg)",
+      "Bash(where convert)",
+      "Bash(where python)",
+      "Bash(where python3)",
+      "Bash(where node)",
+      "Bash(C:UsersJohnsAppDataLocalProgramsPythonPython311python.exe -c \"from PIL import Image; print\\(''pillow ok''\\)\")",
+      "Bash(python -c \"from PIL import Image; print\\(''pillow ok''\\)\")",
+      "Bash(python -:*)",
+      "Bash(ie4uinit.exe -show)",
+      "Bash(taskkill /f /im explorer.exe)",
+      "Bash(start explorer.exe)"
     ]
   }
 }

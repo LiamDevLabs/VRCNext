@@ -3529,6 +3529,8 @@ public class MainForm : Form
         var worlds   = worldsTask.IsCompletedSuccessfully  ? worldsTask.Result  : new JArray();
         var (mutualsArr, mutualsOptedOut) = mutualsTask.IsCompletedSuccessfully
             ? mutualsTask.Result : (new JArray(), false);
+        // Badges are embedded directly in the user object from GET /users/{userId}
+        var badgesArr = user["badges"] as JArray ?? new JArray();
 
         string worldName     = world?["name"]?.ToString() ?? "";
         string worldThumb    = world?["thumbnailImageUrl"]?.ToString() ?? "";
@@ -3614,6 +3616,23 @@ public class MainForm : Form
             });
         }
 
+        List<object> badges = new();
+        foreach (var b in badgesArr)
+        {
+            var bObj = b as JObject;
+            if (bObj == null) continue;
+            var imageUrl = bObj["badgeImageUrl"]?.ToString() ?? "";
+            if (string.IsNullOrEmpty(imageUrl)) continue;
+            badges.Add(new
+            {
+                id          = bObj["badgeId"]?.ToString() ?? "",
+                name        = bObj["badgeName"]?.ToString() ?? "",
+                description = bObj["badgeDescription"]?.ToString() ?? "",
+                imageUrl,
+                showcased   = bObj["showcased"]?.Value<bool>() ?? false,
+            });
+        }
+
         var (totalSeconds, lastSeenLocal) = _timeTracker.GetUserStats(userId);
         var lastLogin = user["last_login"]?.ToString() ?? "";
 
@@ -3661,6 +3680,7 @@ public class MainForm : Form
             bioLinks = user["bioLinks"]?.ToObject<List<string>>() ?? new List<string>(),
             isFavorited = _favoriteFriends.ContainsKey(userId),
             favFriendId = _favoriteFriends.GetValueOrDefault(userId, ""),
+            badges,
         };
     }
 

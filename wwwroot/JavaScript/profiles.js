@@ -791,6 +791,21 @@ function renderFriendDetail(d) {
         if (repFromList) repG = repFromList;
     }
 
+    // VRChat badges (API badges like VRC+ Supporter, etc.)
+    let vrcBadgesHtml = '';
+    const vrcBadges = d.badges || [];
+    if (vrcBadges.length > 0) {
+        const iconsHtml = vrcBadges.map(b =>
+            `<div class="fd-vrc-badge-wrap"` +
+                ` data-badge-img="${esc(b.imageUrl)}"` +
+                ` data-badge-name="${encodeURIComponent(b.name)}"` +
+                ` data-badge-desc="${encodeURIComponent(b.description || '')}">` +
+                `<img class="fd-vrc-badge-icon" src="${esc(b.imageUrl)}" alt="${esc(b.name)}" onerror="this.closest('.fd-vrc-badge-wrap').style.display='none'">` +
+            `</div>`
+        ).join('');
+        vrcBadgesHtml = `<div class="fd-vrc-badges"><div class="fd-group-rep-label">Badges</div><div class="fd-vrc-badges-row">${iconsHtml}</div></div>`;
+    }
+
     // Represented group card for Info tab (above bio)
     let repGroupInfoHtml = '';
     if (repG && repG.id) {
@@ -861,7 +876,7 @@ function renderFriendDetail(d) {
     // Info tab content
     const tlPreviewHtml = buildFdTimelinePreview(d.id || '');
     const userIdBadge = d.id ? `<div style="margin-bottom:10px;">${idBadge(d.id)}</div>` : '';
-    const infoContent = `${repGroupInfoHtml}${userIdBadge}${bioHtml}${bioLinksHtml}${langsHtml}${worldHtml}${metaHtml ? '<div style="margin-bottom:14px;">' + metaHtml + '</div>' : ''}${noteHtml}${tlPreviewHtml}`;
+    const infoContent = `${vrcBadgesHtml}${repGroupInfoHtml}${userIdBadge}${bioHtml}${bioLinksHtml}${langsHtml}${worldHtml}${metaHtml ? '<div style="margin-bottom:14px;">' + metaHtml + '</div>' : ''}${noteHtml}${tlPreviewHtml}`;
 
     // Banner
     const bannerSrc = d.profilePicOverride || d.currentAvatarImageUrl || d.image || '';
@@ -1086,3 +1101,57 @@ function filterFavFriends() {
         </div>`;
     }).join('');
 }
+
+// ── Global badge tooltip (position: fixed, escapes modal overflow) ──
+(function () {
+    let tip = null;
+
+    function getTip() {
+        if (!tip) {
+            tip = document.createElement('div');
+            tip.className = 'fd-vrc-badge-tooltip-global';
+            document.body.appendChild(tip);
+        }
+        return tip;
+    }
+
+    document.addEventListener('mouseover', function (e) {
+        const wrap = e.target.closest('.fd-vrc-badge-wrap');
+        if (!wrap) return;
+        const t = getTip();
+        const img  = wrap.dataset.badgeImg  || '';
+        const name = decodeURIComponent(wrap.dataset.badgeName || '');
+        const desc = decodeURIComponent(wrap.dataset.badgeDesc || '');
+        t.innerHTML =
+            `<img class="fd-vrc-badge-tip-img" src="${esc(img)}" alt="">` +
+            `<div class="fd-vrc-badge-tip-text">` +
+                `<div class="fd-vrc-badge-tip-name">${esc(name)}</div>` +
+                (desc ? `<div class="fd-vrc-badge-tip-desc">${esc(desc)}</div>` : '') +
+            `</div>`;
+
+        // Measure while invisible to get real dimensions
+        t.style.opacity = '0';
+        t.style.display = 'flex';
+        const tw = t.offsetWidth;
+        const th = t.offsetHeight;
+
+        const rect = wrap.getBoundingClientRect();
+        let x = rect.left + rect.width / 2 - tw / 2;
+        let y = rect.top - th - 8;
+
+        // Clamp to viewport
+        x = Math.max(8, Math.min(window.innerWidth - tw - 8, x));
+        if (y < 8) y = rect.bottom + 8;
+
+        t.style.left = x + 'px';
+        t.style.top  = y + 'px';
+        t.style.opacity = '1';
+    });
+
+    document.addEventListener('mouseout', function (e) {
+        const wrap = e.target.closest('.fd-vrc-badge-wrap');
+        if (!wrap) return;
+        if (wrap.contains(e.relatedTarget)) return;
+        if (tip) tip.style.opacity = '0';
+    });
+}());
