@@ -1,5 +1,5 @@
 VRCNext is a VRChat Launcher and Management system that aims for simplicity and performance.
-With VRCNext you can check the status of your friends, watch their profiles, see in what world they are and ask them to send you an invite or send them one yourself. You can create an instance before even starting VRChat, manage your friends, remove or add new ones. You can search for worlds and groups, change your avatar before even starting VRChat, and set up a Media Library so all of your VRChat images are in one place. Send images directly to Discord using the Media Relay webhook system. See actual instance information such as which players are currently in your instance. Start VRChat directly through VRCNext and configure other apps to launch alongside it — like SlimeVR, VRCVideoCacher, and VRCFaceTracking.
+With VRCNext you can check the status of your friends, watch their profiles, see in what world they are and ask them to send you an invite or send them one yourself. You can create an instance before even starting VRChat, manage your friends, remove or add new ones. You can search for worlds and groups, change your avatar before even starting VRChat, and set up a Media Library so all of your VRChat images are in one place. Send images directly to Discord using the Media Relay webhook system. See actual instance information such as which players are currently in your instance. Start VRChat directly through VRCNext and configure other apps to launch alongside it like SlimeVR, VRCVideoCacher, and VRCFaceTracking.
 
 VRCNext is not a replacement for VRCX and never will be. It is a hobby project for a good-looking and useful VRChat launcher with practical features. More features may be added in the future!
 
@@ -32,7 +32,7 @@ VRCNext is not a replacement for VRCX and never will be. It is a hobby project f
 
 * See when you first meet someone and when you meet again!
 * See when you entered a specific instance or world so you can remember the moment!
-* See when you took a picture — never forget anything!
+* See when you took a picture. Never forget anything!
 * Keep track of your personal timeline in VRChat
 * **Friends Timeline:** See when your friends come online/offline, change their status, update their bio, or move between worlds — all in real time
 
