@@ -1,22 +1,22 @@
 VRCNext is a VRChat Launcher and Management system that aims for simplicity and performance.
-With VRCNext you can check the status of your friends, watch their profiles see in what world they are and you can ask them to send you an invite, or yoiu can send them an invite. You can create an instance before even starting vrchat, you can manage your friends, remove them or add new friends. You can search for worlds and create an instance, you canm search for groups and join them or leave them. You can search for new people, change your avatar before even starting vrchat. You can setup a Media Library so you have all of your VRChat Images on one place! you can manage and delete or favorite your pictures. You can send images directly to discord by using the Media Relay that sends images through a webhook bot to the channel of your choice. You can change your own online status and status text. You can see actual instance informations such as which players are in your instance so u can easily add them as friend or see who you want to avoid. 
-You can start VRChat directly through VRCNext and you can setup other apps to start with VRC along as example when you start VRCHat SlimeVR, VideoCacher und VRCFaceTracking starts with it.
+With VRCNext you can check the status of your friends, watch their profiles, see in what world they are and ask them to send you an invite — or send them one yourself. You can create an instance before even starting VRChat, manage your friends, remove or add new ones. You can search for worlds and groups, change your avatar before even starting VRChat, and set up a Media Library so all of your VRChat images are in one place. Send images directly to Discord using the Media Relay webhook system. See actual instance information such as which players are currently in your instance. Start VRChat directly through VRCNext and configure other apps to launch alongside it — like SlimeVR, VRCVideoCacher, and VRCFaceTracking.
 
-VRCNext is not an replacement of VRCX and never will be an replacement for it. It is a hobby project for a Good Looking and usefull VRChat Launcher that has basic features that are explained above already. There might be more features in future if i think they could be usefull!
+VRCNext is not a replacement for VRCX and never will be. It is a hobby project for a good-looking and useful VRChat launcher with practical features. More features may be added in the future!
 
-Feature Overview:
+---
 
+## Feature Overview
 
-Profile Settings:
+### Profile Settings
 
 * Change your online status to red, orange, green, or blue
 * Change your status text
 * Change your biography
 * Change your pronouns
 * Change or add your languages
-* Change or add your social links
+* Change or add your social links (Twitter, Instagram, TikTok, YouTube, Discord, GitHub, and more)
 
-Manage Your Friends:
+### Manage Your Friends
 
 * Add notes and read existing notes
 * Check which groups they are in and join them
@@ -25,105 +25,142 @@ Manage Your Friends:
 * Check their last seen status, pronouns, and online status
 * Unfriend them if you do not want to stay friends anymore
 * See mutual friends you have with someone
+* Block or mute users directly from their profile
+* View your full blocked and muted users list
 
-Timeline:
+### Timeline
+
 * See when you first meet someone and when you meet again!
-* See when you entered a specific instance/World so you can remember the moment!
-* See when you made a picture somewhere
-Never forget anything! keep track of your personal timeline in vrchat!
+* See when you entered a specific instance or world so you can remember the moment!
+* See when you took a picture — never forget anything!
+* Keep track of your personal timeline in VRChat
+* **Friends Timeline:** See when your friends come online/offline, change their status, update their bio, or move between worlds — all in real time
 
-Multi-Invite:
-* Wenn you are inside an instance you can click on "Invite" and invite multiple persons at once to your instance
-- Keep in mind this feature has a anti-spam protection and also vrchat rate limits! the progress takes a while especially when you invite more than 24+ friends. If you invite a bunch of friends the modal will show a progress bar showing the progress of the invites.
+### Multi-Invite
 
-Instance Info:
+* When you are inside an instance you can click on "Invite" and invite multiple people at once
+* Features anti-spam protection and respects VRChat rate limits
+* A progress bar shows the status when inviting many friends at once
+
+### Instance Info
 
 * Show all players who are in an instance with you right now
-* Open user profiles of the current instance and view their information
-* Add people from the instance you are in
+* Open user profiles of players in your current instance
+* Add people from the instance you are in as friends
 
-Stats:
+### Stats
 
 * See how much time you have spent with someone overall
 * This is stored locally, so time spent before using this feature may not be recorded
 
-Worlds and People:
+### Worlds and People
 
-* Find new people or add them as friends by using the People tab
+* Find new people or add them as friends using the People tab
 * Find new worlds and see if there is any public instance available to join
 * Create your own instance outside of VRChat and invite yourself
 * See how much time you spend in a world (BETA)
-* See your favorited worlds (BETA)
+* See your favorited worlds and organize them into groups (BETA)
+* Rename your favorite world groups
 
-Groups:
+### Groups
 
 * Show the groups you are already a member of and read their descriptions
 * Leave any group you are part of
 * Search for a group and join it
 * See group posts
-* See if theres an active group instance
-* See the image galery of an group
+* See if there is an active group instance
+* See the image gallery of a group
 * See updates and descriptions
+* Create group posts with media attachments
+* Create group instances directly from VRCNext
 
-Avatar:
+### Avatar
 
 * Change your avatar before you even start VRChat
 * See your own uploaded avatars
 * See your favorited avatars
 
-Dashboard:
+### Inventory
+
+* View and manage your VRChat Photos and Gallery
+* Upload and manage custom profile Icons (VRC+ required)
+* Upload and manage custom Emojis (VRC+ required, up to 18)
+* Upload and manage custom Stickers (VRC+ required, up to 18)
+* View your in-game Prints collected in VRChat
+* Download or delete individual files
+
+### Dashboard
 
 * Show the worlds your friends are in so you can join them quickly
-* Show the activity of your friends
+* Show the activity of your friends in real time
 
-Notifications:
+### Notifications
 
 * See if you have a new friend request and deny or accept it
 * See if someone invites you to an instance
 * See if someone invites you to a group
 
-Media Library:
+### Media Library
 
 * See all of your VRChat images sorted by date and time
 * Favorite your images so you can find them faster
 * Delete images you do not like
 * Add custom folders, for example your OBS folder, so your VRChat videos are displayed as well
-* See the worlds you took your images - enable Meta Data on your VRCCam for this! (BETA)
-* See the peoples profiles that where in the instance with you when you took the images!
-* Blur images that might be sensitive so now one can see them
+* See the worlds where you took your images — enable Meta Data on your VRCCam for this! (BETA)
+* See the profiles of people who were in the instance when you took the image
+* Blur images that might be sensitive so no one can see them without hovering
 
-Media Relay:
+### Media Relay
 
 * Send images automatically to a Discord channel by using webhooks
 * Take a picture and the webhook bot will automatically post it for you
 * Add up to 4 webhooks, all configurable, and enable or disable them individually
+* Customize the bot name and avatar per webhook
 
-Chatbox Relay (BETA):
+### Chatbox Relay (BETA)
 
 * Show custom text in your chatbox
 * Show the song you are listening to on Spotify or iTunes
-* Show that you are AFk when VRChat is not focused (Desktop Only at the moment)
-* Show your Computer Stats (CPU and RAM Usage)
-* Show your current local time so people know what time it is for you! (12/24h system)
+* Show that you are AFK when VRChat is not focused (Desktop only at the moment)
+* Show your computer stats (CPU and RAM usage)
+* Show your current local time so people know what time it is for you! (12h/24h system)
+* Rotate through multiple custom text lines
+* Choose your separator style and update rate
 
-Space Flight (BETA):
-* Change your play space with either Grip button or control stick button similiar to OVRs Space Drag
-* Lock X, Y or Z Axis for easier Space Flight controlls
-* Use either left, right or both hands to use this feature.
+### OSC Tool (BETA)
 
-Configured Start:
+* Directly control your avatar parameters via OSC
+* Automatically detects all available parameters from VRChat
+* Toggle or set values for Bool, Int, and Float parameters
+* Filter and search through your parameters
 
-* Start VRChat directly in VRCNext
-* Start other apps with VRChat, for example when you click "Play VRChat" it can open SlimeVR, VRCFaceTracking, Standable, and other apps
+### YouTube Fix / VRCVideoCacher
 
-Design:
+* Install and update VRCVideoCacher directly from VRCNext
+* Enables YouTube videos to play correctly inside VRChat worlds
+* Start and stop the local proxy service without leaving the app
+
+### Space Flight (BETA)
+
+* Change your play space with either the Grip button or control stick, similar to OVR Space Drag
+* Lock X, Y, or Z axis for easier Space Flight controls
+* Use either left, right, or both hands for this feature
+* Adjustable drag multiplier
+
+### Configured Start
+
+* Start VRChat directly from VRCNext
+* Start other apps alongside VRChat, for example SlimeVR, VRCFaceTracking, Standable, and others
+
+### Design
 
 * Change the dashboard welcome screen background with a custom image, or choose a random image from your VRChat photo library
 * Change the color of the launcher to your favorite color
 
-Misc:
+### Misc
 
 * Activity Log shows everything that happens, including API calls, debugging, and more
+* Fast Fetch Cache: frequently used profiles, worlds, and groups are cached locally and shown instantly while refreshing in the background
 
 ---
 

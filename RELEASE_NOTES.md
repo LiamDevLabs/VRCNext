@@ -1,11 +1,6 @@
 ## What's New
+- Initial Beta Release 2026.1.0
 
--
 
-Test Build A 2026.1.0
 
 ## Bug Fixes
-
--
-
-Test Fix 2026.1.0
