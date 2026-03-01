@@ -34,7 +34,7 @@ VRCNext is not a replacement for VRCX and never will be. It is a hobby project f
 * See when you entered a specific instance or world so you can remember the moment!
 * See when you took a picture. Never forget anything!
 * Keep track of your personal timeline in VRChat
-* **Friends Timeline:** See when your friends come online/offline, change their status, update their bio, or move between worlds — all in real time
+* **Friends Timeline:** See when your friends come online or offline, change their status, update their bio, or move between worlds in real time
 
 ### Multi-Invite
 
@@ -106,7 +106,7 @@ VRCNext is not a replacement for VRCX and never will be. It is a hobby project f
 * Favorite your images so you can find them faster
 * Delete images you do not like
 * Add custom folders, for example your OBS folder, so your VRChat videos are displayed as well
-* See the worlds where you took your images — enable Meta Data on your VRCCam for this! (BETA)
+* See the worlds where you took your images. Enable Meta Data on your VRCCam for this! (BETA)
 * See the profiles of people who were in the instance when you took the image
 * Blur images that might be sensitive so no one can see them without hovering
 
