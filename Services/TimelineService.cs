@@ -846,6 +846,154 @@ public class TimelineService : IDisposable
         catch { }
     }
 
+    // Time Spent statistics (computed from instance_join events)
+
+    public class WorldTimeEntry
+    {
+        public string WorldId    { get; set; } = "";
+        public string WorldName  { get; set; } = "";
+        public string WorldThumb { get; set; } = "";
+        public long   Seconds    { get; set; }
+        public int    Visits     { get; set; }
+    }
+
+    public class PersonTimeEntry
+    {
+        public string UserId      { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public string Image       { get; set; } = "";
+        public long   Seconds     { get; set; }
+        public int    Meets       { get; set; }
+    }
+
+    public class TimeSpentStats
+    {
+        public List<WorldTimeEntry>  Worlds  { get; set; } = new();
+        public List<PersonTimeEntry> Persons { get; set; } = new();
+        public long TotalSeconds { get; set; }
+    }
+
+    /// <summary>
+    /// Calculates time spent per world and per person from instance_join events.
+    /// Duration per session = time until next join, capped at 8 hours.
+    /// The current user (selfId) is excluded from the persons list.
+    /// </summary>
+    public TimeSpentStats GetTimeSpentStats(string selfId = "")
+    {
+        const long MAX_SESSION = 8L * 3600;
+
+        // Fetch all instance_join events in chronological order
+        var joins = new List<(string Id, DateTime Timestamp, string WorldId, string WorldName, string WorldThumb)>();
+        try
+        {
+            using var cmd = _db.CreateCommand();
+            cmd.CommandText = @"SELECT id, timestamp, world_id, world_name, world_thumb
+                FROM events WHERE type='instance_join' ORDER BY timestamp ASC";
+            using var r = cmd.ExecuteReader();
+            while (r.Read())
+            {
+                if (DateTime.TryParse(r.GetString(1), null,
+                    System.Globalization.DateTimeStyles.RoundtripKind, out var dt))
+                    joins.Add((r.GetString(0), dt, r.GetString(2), r.GetString(3), r.GetString(4)));
+            }
+        }
+        catch { }
+
+        if (joins.Count == 0)
+            return new TimeSpentStats();
+
+        // Fetch players for all those events
+        var playerMap = new Dictionary<string, List<(string UserId, string Name, string Image)>>();
+        try
+        {
+            var inP = string.Join(",", joins.Select((_, i) => $"$p{i}"));
+            using var pcmd = _db.CreateCommand();
+            pcmd.CommandText = $"SELECT event_id, user_id, display_name, image FROM event_players WHERE event_id IN ({inP})";
+            for (int i = 0; i < joins.Count; i++) pcmd.Parameters.AddWithValue($"$p{i}", joins[i].Id);
+            using var pr = pcmd.ExecuteReader();
+            while (pr.Read())
+            {
+                var eid = pr.GetString(0);
+                if (!playerMap.TryGetValue(eid, out var list)) playerMap[eid] = list = new();
+                list.Add((pr.GetString(1), pr.GetString(2), pr.GetString(3)));
+            }
+        }
+        catch { }
+
+        var worldStats  = new Dictionary<string, (string Name, string Thumb, long Sec, int Visits)>();
+        var personStats = new Dictionary<string, (string Name, string Image, long Sec, int Meets)>();
+        long totalSec   = 0;
+
+        for (int i = 0; i < joins.Count; i++)
+        {
+            var ev = joins[i];
+
+            // Estimate session duration
+            long sec = 0;
+            if (i + 1 < joins.Count)
+            {
+                sec = (long)(joins[i + 1].Timestamp - ev.Timestamp).TotalSeconds;
+                if (sec < 0)  sec = 0;
+                if (sec > MAX_SESSION) sec = MAX_SESSION;
+            }
+
+            totalSec += sec;
+
+            // World
+            if (!string.IsNullOrEmpty(ev.WorldId))
+            {
+                worldStats.TryGetValue(ev.WorldId, out var ws);
+                // Keep the most recent (non-empty) world name/thumb
+                var wName  = string.IsNullOrEmpty(ev.WorldName)  ? ws.Name  : ev.WorldName;
+                var wThumb = string.IsNullOrEmpty(ev.WorldThumb) ? ws.Thumb : ev.WorldThumb;
+                worldStats[ev.WorldId] = (wName, wThumb, ws.Sec + sec, ws.Visits + 1);
+            }
+
+            // Persons
+            if (playerMap.TryGetValue(ev.Id, out var players))
+            {
+                foreach (var p in players)
+                {
+                    if (string.IsNullOrEmpty(p.UserId)) continue;
+                    if (!string.IsNullOrEmpty(selfId) && p.UserId == selfId) continue;
+                    personStats.TryGetValue(p.UserId, out var ps);
+                    var pName  = string.IsNullOrEmpty(p.Name)  ? ps.Name  : p.Name;
+                    var pImage = string.IsNullOrEmpty(p.Image) ? ps.Image : p.Image;
+                    personStats[p.UserId] = (pName, pImage, ps.Sec + sec, ps.Meets + 1);
+                }
+            }
+        }
+
+        return new TimeSpentStats
+        {
+            TotalSeconds = totalSec,
+            Worlds = worldStats
+                .Select(kv => new WorldTimeEntry
+                {
+                    WorldId    = kv.Key,
+                    WorldName  = kv.Value.Name,
+                    WorldThumb = kv.Value.Thumb,
+                    Seconds    = kv.Value.Sec,
+                    Visits     = kv.Value.Visits,
+                })
+                .OrderByDescending(w => w.Seconds)
+                .Take(200)
+                .ToList(),
+            Persons = personStats
+                .Select(kv => new PersonTimeEntry
+                {
+                    UserId      = kv.Key,
+                    DisplayName = kv.Value.Name,
+                    Image       = kv.Value.Image,
+                    Seconds     = kv.Value.Sec,
+                    Meets       = kv.Value.Meets,
+                })
+                .OrderByDescending(p => p.Seconds)
+                .Take(200)
+                .ToList(),
+        };
+    }
+
     // Disposal
 
     public void Dispose()

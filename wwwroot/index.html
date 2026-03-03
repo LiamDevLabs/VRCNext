@@ -29,6 +29,7 @@
                     <button class="nav-btn nav-sub" onclick="showTab(14)"><span class="ni msi">smart_display</span><span class="nl">YouTube Fix</span></button>
                     <button class="nav-btn nav-sub" onclick="showTab(8)"><span class="ni msi">article</span><span class="nl">Activity Log</span></button>
                     <button class="nav-btn nav-sub" onclick="showTab(15)"><span class="ni msi">hub</span><span class="nl">Mutual Network</span></button>
+                    <button class="nav-btn nav-sub" onclick="showTab(16)"><span class="ni msi">schedule</span><span class="nl">Time Spent</span></button>
                 </div>
             </div>
             <button class="nav-btn" onclick="showTab(9)"><span class="ni msi">settings</span><span class="nl">Settings</span></button>
@@ -658,6 +659,29 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Tab 16: Time Spent -->
+            <div class="tab" id="tab16">
+                <div class="ts-root">
+                    <div class="ts-header">
+                        <div class="ts-tab-btns">
+                            <button class="btn-fav avatar-filter-btn active" id="tsBtnWorlds" onclick="tsSetView('worlds')">
+                                <span class="msi" style="font-size:15px;">travel_explore</span> Worlds
+                            </button>
+                            <button class="btn-fav avatar-filter-btn" id="tsBtnPersons" onclick="tsSetView('persons')">
+                                <span class="msi" style="font-size:15px;">group</span> Persons
+                            </button>
+                        </div>
+                        <button class="ts-refresh-btn" onclick="tsRefresh()" title="Refresh stats">
+                            <span class="msi" style="font-size:15px;" id="tsRefreshIcon">refresh</span>
+                        </button>
+                    </div>
+                    <div class="ts-summary" id="tsSummary"></div>
+                    <div class="ts-list" id="tsList">
+                        <div class="ts-empty"><span class="msi" style="font-size:28px;color:var(--tx3);">schedule</span><div>No session data yet.<br><span style="font-size:11px;">Join some worlds in VRChat to see stats.</span></div></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -758,6 +782,7 @@
     <script src="JavaScript/messages.js"></script>
     <script src="JavaScript/context_menu.js"></script>
     <script src="JavaScript/network.js"></script>
+    <script src="JavaScript/timespent.js"></script>
     <script src="JavaScript/init.js"></script>
 </body>
 </html>

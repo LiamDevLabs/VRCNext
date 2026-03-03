@@ -385,6 +385,9 @@ if (window.chrome?.webview) {
             case 'vrcMutualCacheLoaded':
                 if (typeof networkCacheLoaded === 'function') networkCacheLoaded(payload.json);
                 break;
+            case 'vrcTimeSpentData':
+                if (typeof tsOnData === 'function') tsOnData(payload);
+                break;
         }
     });
     sendToCS({ action: 'ready' });

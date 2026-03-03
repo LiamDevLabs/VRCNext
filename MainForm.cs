@@ -1598,6 +1598,49 @@ public class MainForm : Form
                     break;
                 }
 
+                case "vrcGetTimeSpent":
+                {
+                    var tsMyId = _vrcApi.CurrentUserId ?? "";
+                    _ = Task.Run(() =>
+                    {
+                        var stats = _timeline.GetTimeSpentStats(tsMyId);
+
+                        // For persons: replace estimated seconds with accurate UserTimeTracker values
+                        // (UserTimeTracker ticks every 45 s when co-present — same source as the profile modal)
+                        var personList = stats.Persons
+                            .Select(p =>
+                            {
+                                var accurate = _timeTracker.Users.TryGetValue(p.UserId, out var rec)
+                                    ? rec.TotalSeconds : p.Seconds;
+                                return (p.UserId, p.DisplayName, p.Image, Seconds: accurate, p.Meets);
+                            })
+                            .OrderByDescending(p => p.Seconds)
+                            .ToList();
+
+                        Invoke(() => SendToJS("vrcTimeSpentData", new
+                        {
+                            totalSeconds = stats.TotalSeconds,
+                            worlds = stats.Worlds.Select(w => new
+                            {
+                                worldId    = w.WorldId,
+                                worldName  = w.WorldName,
+                                worldThumb = w.WorldThumb,
+                                seconds    = w.Seconds,
+                                visits     = w.Visits,
+                            }),
+                            persons = personList.Select(p => new
+                            {
+                                userId      = p.UserId,
+                                displayName = p.DisplayName,
+                                image       = p.Image,
+                                seconds     = p.Seconds,
+                                meets       = p.Meets,
+                            }),
+                        }));
+                    });
+                    break;
+                }
+
                 case "vrcCreateGroupInstance":
                 {
                     var cgiWorldId = msg["worldId"]?.ToString() ?? "";
