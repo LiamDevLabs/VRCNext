@@ -6052,3 +6052,83 @@ div.vn-select {
 .inv-msg-cooldown {
     display: flex; align-items: center; color: var(--tx3); flex-shrink: 0;
 }
+
+/* === Context Menu === */
+#vn-ctx-menu {
+    position: fixed; display: none;
+    background: var(--bg-card);
+    border: 1px solid var(--brd-lt);
+    border-radius: 10px; padding: 4px;
+    min-width: 178px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.25);
+    z-index: 10002;
+    user-select: none;
+    animation: ctxFadeIn .08s ease;
+}
+@keyframes ctxFadeIn {
+    from { opacity: 0; transform: scale(.97); }
+    to   { opacity: 1; transform: scale(1);   }
+}
+.vn-ctx-item {
+    display: flex; align-items: center; gap: 9px;
+    width: 100%; padding: 7px 10px;
+    border: none; background: transparent;
+    color: var(--tx1); font-size: 12.5px; font-weight: 500;
+    cursor: pointer; border-radius: 6px;
+    text-align: left; transition: background .1s, color .1s;
+}
+.vn-ctx-item:hover:not([disabled]) {
+    background: var(--bg-hover); color: var(--tx0);
+}
+.vn-ctx-item .msi {
+    font-size: 16px; color: var(--tx3); width: 18px; flex-shrink: 0;
+}
+.vn-ctx-item:hover:not([disabled]) .msi { color: var(--tx2); }
+.vn-ctx-item.danger { color: var(--err); }
+.vn-ctx-item.danger .msi { color: var(--err); opacity: .75; }
+.vn-ctx-item.danger:hover:not([disabled]) { background: rgba(255,75,85,.08); color: var(--err); }
+.vn-ctx-item.confirm-pending {
+    background: rgba(255,75,85,.12) !important;
+    color: var(--err) !important;
+}
+.vn-ctx-sep {
+    height: 1px; background: var(--brd); margin: 4px 6px;
+}
+.gd-post-del {
+    background: none; border: none; cursor: pointer; flex-shrink: 0;
+    color: var(--tx3); padding: 2px; border-radius: 4px;
+    display: flex; align-items: center; transition: color .15s;
+}
+.gd-post-del:hover { color: var(--err); }
+.gd-post-del .msi { font-size: 15px; }
+
+#vn-ctx-submenu {
+    position: fixed; display: none;
+    background: var(--bg-card);
+    border: 1px solid var(--brd-lt);
+    border-radius: 10px; padding: 4px;
+    min-width: 160px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.25);
+    z-index: 10003;
+    user-select: none;
+    animation: ctxFadeIn .08s ease;
+}
+.vn-ctx-arrow {
+    margin-left: auto; font-size: 14px !important; color: var(--tx3); width: auto !important;
+}
+.vn-ctx-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    flex-shrink: 0; margin: 0 5px;
+}
+.vn-ctx-check {
+    margin-left: auto; font-size: 14px !important; color: var(--accent); width: auto !important;
+}
+.vn-ctx-count {
+    margin-left: auto; font-size: 10px; font-weight: 600;
+    color: var(--tx3); background: var(--bg-input);
+    padding: 1px 6px; border-radius: 8px; flex-shrink: 0;
+}
+.vn-ctx-loading {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; font-size: 12px; color: var(--tx3);
+}

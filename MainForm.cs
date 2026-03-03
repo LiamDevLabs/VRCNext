@@ -1365,6 +1365,7 @@ public class MainForm : Form
                                     isJoined = g["myMember"] != null && g["myMember"].Type != JTokenType.Null,
                                     canPost,
                                     posts = posts.Select(p => new {
+                                        id = p["id"]?.ToString() ?? "",
                                         title = p["title"]?.ToString() ?? "",
                                         text = p["text"]?.ToString() ?? "",
                                         imageUrl = p["imageUrl"]?.ToString() ?? "",
@@ -1513,6 +1514,21 @@ public class MainForm : Form
                                 success = ok,
                                 message = ok ? "Post created!" : "Failed to create post"
                             }));
+                        });
+                    }
+                    break;
+                }
+
+                case "vrcDeleteGroupPost":
+                {
+                    var dgpGroupId = msg["groupId"]?.ToString() ?? "";
+                    var dgpPostId  = msg["postId"]?.ToString() ?? "";
+                    if (!string.IsNullOrEmpty(dgpGroupId) && !string.IsNullOrEmpty(dgpPostId))
+                    {
+                        _ = Task.Run(async () =>
+                        {
+                            var ok = await _vrcApi.DeleteGroupPostAsync(dgpGroupId, dgpPostId);
+                            Invoke(() => SendToJS("vrcActionResult", new { action = "deleteGroupPost", success = ok, postId = dgpPostId }));
                         });
                     }
                     break;
@@ -2770,6 +2786,9 @@ var list = avatars.Select(a => new
                     || perms.Contains("group-instance-public-create")
                     || perms.Contains("group-instance-restricted-create");
 
+                var canPost = perms != null
+                    && (perms.Contains("*") || perms.Contains("group-posts-manage"));
+
                 enriched.Add(new {
                     id = full["id"]?.ToString() ?? ids[i],
                     name,
@@ -2780,6 +2799,7 @@ var list = avatars.Select(a => new
                     memberCount  = full["memberCount"]?.Value<int>() ?? 0,
                     privacy      = full["privacy"]?.ToString() ?? "",
                     canCreateInstance = canCreate,
+                    canPost,
                 });
             }
             if (_settings.FfcEnabled) _cache.Save(CacheHandler.KeyGroups, enriched);

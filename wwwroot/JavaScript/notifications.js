@@ -1,8 +1,22 @@
 /* === Notifications === */
+let _notifDismiss = null;
+
 function toggleNotifPanel() {
     notifPanelOpen = !notifPanelOpen;
     document.getElementById('notifPanel').style.display = notifPanelOpen ? '' : 'none';
-    if (notifPanelOpen) refreshNotifications();
+    if (notifPanelOpen) {
+        refreshNotifications();
+        setTimeout(() => {
+            _notifDismiss = e => {
+                const panel = document.getElementById('notifPanel');
+                const btn   = document.getElementById('btnNotif');
+                if (!panel?.contains(e.target) && !btn?.contains(e.target)) toggleNotifPanel();
+            };
+            document.addEventListener('click', _notifDismiss);
+        }, 0);
+    } else {
+        if (_notifDismiss) { document.removeEventListener('click', _notifDismiss); _notifDismiss = null; }
+    }
 }
 
 function refreshNotifications() {

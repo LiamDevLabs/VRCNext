@@ -116,11 +116,28 @@ if (window.chrome?.webview) {
                 document.getElementById('friendDetailContent').innerHTML = `<div class="fd-loading" style="color:var(--err);">${esc(payload.error || 'Error loading profile')}</div><div style="margin-top:10px;text-align:right;"><button class="fd-btn" onclick="closeFriendDetail()">Close</button></div>`;
                 break;
             case 'vrcActionResult':
-                showToast(payload.success, payload.message);
-                // Re-enable friend action buttons if open
-                if (!['createGroupPost', 'acceptNotif', 'join'].includes(payload.action)) {
-                    const fdActions = document.querySelector('#friendDetailContent .fd-actions');
-                    if (fdActions) fdActions.querySelectorAll('button').forEach(b => b.disabled = false);
+                if (payload.action === 'deleteGroupPost') {
+                    if (payload.success) {
+                        const card = document.querySelector(`.fd-group-card[data-post-id="${payload.postId}"]`);
+                        if (card) card.remove();
+                        showToast(true, 'Group post deleted.');
+                    } else {
+                        const card = document.querySelector(`.fd-group-card[data-post-id="${payload.postId}"]`);
+                        if (card) {
+                            card.style.opacity = '';
+                            card.style.pointerEvents = '';
+                            const btn = card.querySelector('.gd-post-del');
+                            if (btn) { btn.disabled = false; btn.querySelector('.msi').textContent = 'delete'; }
+                        }
+                        showToast(false, 'Delete failed.');
+                    }
+                } else {
+                    showToast(payload.success, payload.message);
+                    // Re-enable friend action buttons if open
+                    if (!['createGroupPost', 'acceptNotif', 'join'].includes(payload.action)) {
+                        const fdActions = document.querySelector('#friendDetailContent .fd-actions');
+                        if (fdActions) fdActions.querySelectorAll('button').forEach(b => b.disabled = false);
+                    }
                 }
                 break;
             case 'vrcProfileUpdated':

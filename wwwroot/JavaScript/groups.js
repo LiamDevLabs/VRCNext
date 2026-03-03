@@ -57,9 +57,16 @@ function renderGroupDetail(g) {
             const fullText = p.text || '';
             const isLong = fullText.length > 120;
             const preview = isLong ? fullText.slice(0, 120) + '...' : fullText;
-            postsTab += `<div class="fd-group-card" style="display:block;cursor:default;padding:12px;">
-                <div style="font-size:13px;font-weight:600;color:var(--tx0);">${esc(p.title || 'Untitled')}</div>
-                <div style="font-size:10px;color:var(--tx3);margin:2px 0 6px;">${date}${p.visibility ? ' · ' + esc(p.visibility) : ''}</div>
+            const pid = esc(p.id || ''), gid = esc(g.id || '');
+            const delBtn = (canPost && p.id)
+                ? `<button class="gd-post-del" onclick="deleteGroupPost('${gid}','${pid}',this)" title="Delete post"><span class="msi">delete</span></button>`
+                : '';
+            postsTab += `<div class="fd-group-card" data-post-id="${pid}" style="display:block;cursor:default;padding:12px;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+                    <div style="font-size:13px;font-weight:600;color:var(--tx0);flex:1;">${esc(p.title || 'Untitled')}</div>
+                    ${delBtn}
+                </div>
+                <div style="font-size:10px;color:var(--tx3);margin-bottom:6px;">${date}${p.visibility ? ' · ' + esc(p.visibility) : ''}</div>
                 <div class="gd-post-text" id="gpost${i}" data-full="${esc(fullText).replace(/"/g,'&quot;')}" data-preview="${esc(preview).replace(/"/g,'&quot;')}" style="font-size:12px;color:var(--tx2);line-height:1.4;">${esc(preview)}</div>
                 ${isLong ? `<div style="margin-top:4px;"><span class="gd-expand" onclick="toggleGPost(${i})">Show more</span></div>` : ''}
                 ${imgHtml}
@@ -190,6 +197,14 @@ function toggleGPost(i) {
         el.textContent = el.dataset.preview;
         link.textContent = 'Show more';
     }
+}
+
+function deleteGroupPost(groupId, postId, btn) {
+    btn.disabled = true;
+    btn.querySelector('.msi').textContent = 'hourglass_empty';
+    const card = btn.closest('.fd-group-card');
+    if (card) { card.style.opacity = '.4'; card.style.pointerEvents = 'none'; }
+    sendToCS({ action: 'vrcDeleteGroupPost', groupId, postId });
 }
 
 /* === Group Post Modal === */

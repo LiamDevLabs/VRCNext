@@ -1175,6 +1175,20 @@ public class VRChatApiService
         catch (Exception ex) { Log($"CreateGroupPost exception: {ex.Message}"); return false; }
     }
 
+    public async Task<bool> DeleteGroupPostAsync(string groupId, string postId)
+    {
+        if (!IsLoggedIn) return false;
+        try
+        {
+            var resp = await _http.DeleteAsync($"{BASE}/groups/{groupId}/posts/{postId}");
+            Log($"DeleteGroupPost({groupId}/{postId}): {(int)resp.StatusCode}");
+            if (!resp.IsSuccessStatusCode)
+                Log($"DeleteGroupPost body: {await resp.Content.ReadAsStringAsync()}");
+            return resp.IsSuccessStatusCode;
+        }
+        catch (Exception ex) { Log($"DeleteGroupPost exception: {ex.Message}"); return false; }
+    }
+
     /// <summary>Upload an image to VRChat via POST /file/image multipart. Returns fileId or null on failure.</summary>
     public async Task<string?> UploadImageAsync(byte[] imageBytes, string mimeType = "image/png", string ext = ".png")
     {

@@ -395,6 +395,11 @@ function addWorldToFavGroup(worldId, groupName, groupType, oldFvrtId, rowEl) {
 function onWorldFavoriteResult(data) {
     if (data.ok) {
         const cached = worldInfoCache[data.worldId] || {};
+        const worldName  = cached.name || favWorldsData.find(w => w.id === data.worldId)?.name || '';
+        const group      = (typeof favWorldGroups !== 'undefined') && favWorldGroups.find(g => g.name === data.groupName);
+        const groupLabel = group?.displayName || data.groupName;
+        showToast(true, worldName ? `"${worldName}" saved to ${groupLabel}` : `Saved to ${groupLabel}`);
+
         const existing = favWorldsData.find(w => w.id === data.worldId);
         if (existing) {
             existing.favoriteGroup = data.groupName;
