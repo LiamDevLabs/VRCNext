@@ -761,15 +761,17 @@ public class MainForm : Form
                     await VrcUpdateStatusAsync(newStatus, newDesc);
                     break;
 
-                // Update own profile (bio, pronouns, links, languages)
+                // Update own profile (bio, pronouns, links, languages, icon, banner)
                 case "vrcUpdateProfile":
                     var upBio = msg["bio"] != null ? msg["bio"]!.ToString() : (string?)null;
                     var upPronouns = msg["pronouns"] != null ? msg["pronouns"]!.ToString() : (string?)null;
                     var upBioLinks = msg["bioLinks"]?.ToObject<List<string>>();
                     var upTags = msg["tags"]?.ToObject<List<string>>();
+                    var upUserIcon = msg["userIcon"]            != null ? msg["userIcon"]!.ToString()            : (string?)null;
+                    var upBanner   = msg["profilePicOverride"]  != null ? msg["profilePicOverride"]!.ToString()  : (string?)null;
                     _ = Task.Run(async () =>
                     {
-                        var updUser = await _vrcApi.UpdateProfileAsync(upBio, upPronouns, upBioLinks, upTags);
+                        var updUser = await _vrcApi.UpdateProfileAsync(upBio, upPronouns, upBioLinks, upTags, upUserIcon, upBanner);
                         Invoke(() =>
                         {
                             if (updUser != null)
@@ -1660,15 +1662,18 @@ public class MainForm : Form
                     var ugRules     = msg["rules"]       != null ? msg["rules"]!.ToString()       : (string?)null;
                     var ugLanguages = msg["languages"]?.ToObject<List<string>>();
                     var ugLinks     = msg["links"]?.ToObject<List<string>>();
+                    var ugIconId   = msg["iconId"]   != null ? msg["iconId"]!.ToString()   : (string?)null;
+                    var ugBannerId = msg["bannerId"] != null ? msg["bannerId"]!.ToString() : (string?)null;
                     if (!string.IsNullOrEmpty(ugGroupId))
                     {
                         _ = Task.Run(async () =>
                         {
-                            var ok = await _vrcApi.UpdateGroupAsync(ugGroupId, ugDesc, ugRules, ugLanguages, ugLinks);
+                            var ok = await _vrcApi.UpdateGroupAsync(ugGroupId, ugDesc, ugRules, ugLanguages, ugLinks, ugIconId, ugBannerId);
                             Invoke(() => SendToJS("vrcGroupUpdated", new {
                                 success = ok, groupId = ugGroupId,
                                 description = ugDesc, rules = ugRules,
-                                languages = ugLanguages, links = ugLinks
+                                languages = ugLanguages, links = ugLinks,
+                                iconId = ugIconId, bannerId = ugBannerId
                             }));
                         });
                     }

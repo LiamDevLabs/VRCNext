@@ -105,12 +105,13 @@ function renderMyProfileContent() {
 
     const bannerSrc = u.profilePicOverride || u.currentAvatarImageUrl || u.image || '';
     const bannerHtml = bannerSrc
-        ? `<div class="fd-banner"><img src="${esc(bannerSrc)}" onerror="this.parentElement.style.display='none'"><div class="fd-banner-fade"></div></div>`
-        : '';
+        ? `<div class="fd-banner"><img src="${esc(bannerSrc)}" onerror="this.parentElement.style.display='none'"><div class="fd-banner-fade"></div><button class="myp-edit-btn" style="position:absolute;top:8px;right:8px;z-index:2;" onclick="openImagePicker('profile-banner')" title="Change banner"><span class="msi" style="font-size:13px;">edit</span></button></div>`
+        : `<div style="display:flex;justify-content:flex-end;padding:4px 0 2px 0;"><button class="myp-edit-btn" onclick="openImagePicker('profile-banner')" title="Add banner"><span class="msi" style="font-size:13px;">edit</span><span style="font-size:11px;margin-left:3px;">Banner</span></button></div>`;
 
-    const imgTag = u.image
+    const avatarImg = u.image
         ? `<img class="myp-avatar" src="${esc(u.image)}" onerror="this.outerHTML='<div class=\\'myp-avatar myp-avatar-fb\\'>${esc((u.displayName||'?')[0])}</div>'">`
         : `<div class="myp-avatar myp-avatar-fb">${esc((u.displayName||'?')[0])}</div>`;
+    const imgTag = `<div style="position:relative;display:inline-block;flex-shrink:0;">${avatarImg}<button class="myp-edit-btn" style="position:absolute;bottom:-4px;right:-4px;padding:2px;min-width:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;" onclick="openImagePicker('profile-icon')" title="Change icon"><span class="msi" style="font-size:11px;">edit</span></button></div>`;
 
     const langTags = (u.tags||[]).filter(t => t.startsWith('language_'));
     const langsViewHtml = langTags.length
@@ -1349,4 +1350,109 @@ function closeFriendInviteModal() {
     el.style.transition = 'opacity .15s';
     setTimeout(() => el.remove(), 150);
     window._inviteModalEl = null;
+}
+
+// ================================================================
+// Image Picker — shared modal for profile/group icon & banner
+// ================================================================
+
+let _pickerContext = null; // { type: 'profile-icon'|'profile-banner'|'group-icon'|'group-banner', targetId }
+
+function openImagePicker(type, targetId) {
+    _pickerContext = { type, targetId: targetId || null };
+    window._pickerSelectedUrl = null;
+
+    const isIcon = type.endsWith('-icon');
+    const tag    = isIcon ? 'icon' : 'gallery';
+    const title  = isIcon ? 'Select Icon' : 'Select Banner Photo';
+
+    // Build overlay fresh each time so it's always above current modal stack
+    let overlay = document.getElementById('imagePickerOverlay');
+    if (overlay) overlay.remove();
+
+    overlay = document.createElement('div');
+    overlay.id = 'imagePickerOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:10003;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;animation:fadeIn .12s ease;backdrop-filter:blur(4px);';
+    overlay.innerHTML = `
+        <div class="gp-modal" style="width:460px;max-height:80vh;display:flex;flex-direction:column;">
+            <div class="gp-modal-header">
+                <span class="msi" style="font-size:20px;color:var(--accent);">edit</span>
+                <span id="imagePickerTitle">${esc(title)}</span>
+                <button class="fd-btn" onclick="closeImagePicker()" style="padding:4px 8px;" title="Close"><span class="msi" style="font-size:18px;">close</span></button>
+            </div>
+            <div class="gp-modal-body" style="flex:1;overflow-y:auto;">
+                <div id="imagePickerGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;padding:4px 0;">
+                    <div style="grid-column:1/-1;text-align:center;padding:20px;font-size:11px;color:var(--tx3);">Loading...</div>
+                </div>
+            </div>
+            <div class="gp-modal-footer">
+                <button class="fd-btn" onclick="closeImagePicker()">Cancel</button>
+                <button class="fd-btn fd-btn-join" id="imagePickerApply" disabled onclick="applyImagePicker()" style="opacity:.45;">
+                    <span class="msi" style="font-size:16px;vertical-align:middle;margin-right:4px;">check</span>Apply
+                </button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeImagePicker(); });
+
+    // Always fetch fresh — avoids stale/wrong cache from inventory tab mismatch
+    sendToCS({ action: 'invGetFiles', tag });
+}
+
+function _renderImagePickerGrid(files) {
+    const grid = document.getElementById('imagePickerGrid');
+    if (!grid) return;
+    if (!files || !files.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;font-size:11px;color:var(--tx3);">No items found.<br>Upload images via the Inventory tab.</div>';
+        return;
+    }
+    grid.innerHTML = files.map(f => {
+        const url = f.fileUrl || '';
+        const fid = f.id || '';
+        if (!url) return '';
+        return `<img src="${esc(url)}" data-file-id="${esc(fid)}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;cursor:pointer;opacity:.85;transition:opacity .15s,outline .12s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.85" onclick="selectPickerImage(this,'${jsq(url)}','${jsq(fid)}')" onerror="this.parentElement?.remove()">`;
+    }).join('');
+}
+
+function selectPickerImage(el, url, fileId) {
+    document.querySelectorAll('#imagePickerGrid img').forEach(i => { i.style.opacity = '.85'; i.style.outline = 'none'; });
+    el.style.opacity = '1';
+    el.style.outline = '2px solid var(--accent)';
+    window._pickerSelectedUrl = url;
+    window._pickerSelectedFileId = fileId || '';
+    const btn = document.getElementById('imagePickerApply');
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+}
+
+function closeImagePicker() {
+    const overlay = document.getElementById('imagePickerOverlay');
+    if (overlay) overlay.remove();
+    _pickerContext = null;
+    window._pickerSelectedUrl = null;
+    window._pickerSelectedFileId = null;
+}
+
+function applyImagePicker() {
+    const url    = window._pickerSelectedUrl;
+    const fileId = window._pickerSelectedFileId;
+    if (!url || !_pickerContext) return;
+    const { type, targetId } = _pickerContext;
+
+    // Profile: pass URL (VRChat user API accepts CDN URLs directly)
+    if (type === 'profile-icon')        sendToCS({ action: 'vrcUpdateProfile', userIcon: url });
+    else if (type === 'profile-banner') sendToCS({ action: 'vrcUpdateProfile', profilePicOverride: url });
+    // Groups: VRChat group API requires file IDs (iconId/bannerId), not URLs
+    else if (type === 'group-icon')     sendToCS({ action: 'vrcUpdateGroup', groupId: targetId, iconId:   fileId });
+    else if (type === 'group-banner')   sendToCS({ action: 'vrcUpdateGroup', groupId: targetId, bannerId: fileId });
+
+    closeImagePicker();
+}
+
+// Called from messages.js when invFiles arrives while picker is open and waiting
+function onImagePickerFilesLoaded(files, tag) {
+    const overlay = document.getElementById('imagePickerOverlay');
+    if (!overlay || !_pickerContext) return;
+    const expectedTag = _pickerContext.type.endsWith('-icon') ? 'icon' : 'gallery';
+    if (tag !== expectedTag) return;
+    _renderImagePickerGrid(files);
 }

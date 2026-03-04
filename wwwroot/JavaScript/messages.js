@@ -161,15 +161,15 @@ if (window.chrome?.webview) {
                 break;
             case 'vrcGroupUpdated':
                 if (payload.success) {
-                    // Update view content inline
+                    // Only update each view if that field was actually part of the save
                     const dv = document.getElementById('gdescDescView');
                     const rv = document.getElementById('gdescRulesView');
                     const lnv = document.getElementById('ggrpLinksView');
                     const lav = document.getElementById('ggrpLangsView');
-                    if (dv) dv.innerHTML = payload.description
+                    if (dv && payload.description != null) dv.innerHTML = payload.description
                         ? `<div class="fd-bio">${esc(payload.description)}</div>`
                         : '<div class="myp-empty">No description</div>';
-                    if (rv) rv.innerHTML = payload.rules
+                    if (rv && payload.rules != null) rv.innerHTML = payload.rules
                         ? `<div style="font-size:11px;color:var(--tx3);padding:8px;background:var(--bg-input);border-radius:8px;max-height:120px;overflow-y:auto;white-space:pre-wrap;">${esc(payload.rules)}</div>`
                         : '<div class="myp-empty">No rules set</div>';
                     if (lnv && payload.links != null) {
@@ -184,10 +184,16 @@ if (window.chrome?.webview) {
                             ? `<div class="fd-lang-tags">${langs.map(l => `<span class="fd-lang-tag">${esc(LANG_MAP['language_'+l] || l.toUpperCase())}</span>`).join('')}</div>`
                             : '<div class="myp-empty">No languages set</div>';
                     }
-                    cancelGroupField('desc');
-                    cancelGroupField('rules');
-                    cancelGroupField('links');
-                    cancelGroupField('langs');
+                    // Icon/banner changed — re-fetch the group to get the new resolved URLs
+                    if (payload.iconId || payload.bannerId) {
+                        const gid = payload.groupId;
+                        if (gid) sendToCS({ action: 'vrcGetGroup', groupId: gid });
+                    }
+                    // Only cancel the field that was actually being edited
+                    if (payload.description != null) cancelGroupField('desc');
+                    if (payload.rules != null) cancelGroupField('rules');
+                    if (payload.links != null) cancelGroupField('links');
+                    if (payload.languages != null) cancelGroupField('langs');
                     showToast(true, 'Group updated!');
                 } else {
                     document.querySelectorAll('#gdescDescEdit .myp-save-btn, #gdescRulesEdit .myp-save-btn, #ggrpLinksEdit .myp-save-btn, #ggrpLangsEdit .myp-save-btn').forEach(b => b.disabled = false);
@@ -435,11 +441,15 @@ if (window.chrome?.webview) {
             case 'friendTimelineSearchResults': handleFtlSearchResults(payload); break;
             case 'invFiles':
                 if (!payload.error) {
+                    // Cache by actual tag (not activeInvTab) to prevent cross-contamination
+                    if (payload.tag && typeof invFilesCache !== 'undefined') invFilesCache[payload.tag] = payload.files || [];
                     renderInvFiles(payload.files || [], activeInvTab);
                     if (payload.tag === 'gallery' && typeof onGroupPostGalleryLoaded === 'function')
                         onGroupPostGalleryLoaded(payload.files || []);
                     if (payload.tag === 'gallery' && typeof onGroupEventGalleryLoaded === 'function')
                         onGroupEventGalleryLoaded(payload.files || []);
+                    if (typeof onImagePickerFilesLoaded === 'function')
+                        onImagePickerFilesLoaded(payload.files || [], payload.tag);
                 } else {
                     const g = document.getElementById('invGrid');
                     if (g) g.innerHTML = `<div class="empty-msg" style="color:var(--err);">Error: ${esc(payload.error)}<br><span style="font-size:11px;color:var(--tx3);">This feature may require VRC+ or a VRChat login.</span></div>`;

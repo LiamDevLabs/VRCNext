@@ -364,8 +364,8 @@ public class VRChatApiService
         catch (Exception ex) { Log($"SetHomeWorld exception: {ex.Message}"); return false; }
     }
 
-    // Update own profile (bio, pronouns, links, tags)
-    public async Task<JObject?> UpdateProfileAsync(string? bio, string? pronouns, List<string>? bioLinks, List<string>? tags)
+    // Update own profile (bio, pronouns, links, tags, icon, banner)
+    public async Task<JObject?> UpdateProfileAsync(string? bio, string? pronouns, List<string>? bioLinks, List<string>? tags, string? userIcon = null, string? profilePicOverride = null)
     {
         if (!IsLoggedIn || CurrentUserId == null) return null;
         try
@@ -375,6 +375,8 @@ public class VRChatApiService
             if (pronouns != null) payload["pronouns"] = pronouns;
             if (bioLinks != null) payload["bioLinks"] = JArray.FromObject(bioLinks);
             if (tags != null) payload["tags"] = JArray.FromObject(tags);
+            if (userIcon != null) payload["userIcon"] = userIcon;
+            if (profilePicOverride != null) payload["profilePicOverride"] = profilePicOverride;
             var content = new StringContent(payload.ToString(), Encoding.UTF8, "application/json");
             var resp = await _http.PutAsync($"{BASE}/users/{CurrentUserId}", content);
             var body = await resp.Content.ReadAsStringAsync();
@@ -1345,7 +1347,7 @@ public class VRChatApiService
         catch (Exception ex) { Log($"BanGroupMember exception: {ex.Message}"); return false; }
     }
 
-    public async Task<bool> UpdateGroupAsync(string groupId, string? description = null, string? rules = null, List<string>? languages = null, List<string>? links = null)
+    public async Task<bool> UpdateGroupAsync(string groupId, string? description = null, string? rules = null, List<string>? languages = null, List<string>? links = null, string? iconId = null, string? bannerId = null)
     {
         if (!IsLoggedIn) return false;
         try
@@ -1355,6 +1357,8 @@ public class VRChatApiService
             if (rules       != null) body["rules"]       = rules;
             if (languages   != null) body["languages"]   = new JArray(languages);
             if (links       != null) body["links"]       = new JArray(links);
+            if (iconId      != null) body["iconId"]      = iconId;
+            if (bannerId    != null) body["bannerId"]     = bannerId;
             var resp = await _http.PutAsync($"{BASE}/groups/{groupId}",
                 new StringContent(body.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json"));
             Log($"UpdateGroup({groupId}): {(int)resp.StatusCode}");

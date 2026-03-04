@@ -33,11 +33,19 @@ function openGroupDetail(groupId) {
 function renderGroupDetail(g) {
     window._currentGroupDetail = { id: g.id, canKick: g.canKick === true, canBan: g.canBan === true, languages: g.languages || [], links: g.links || [] };
     const el = document.getElementById('detailModalContent');
+    const canEdit = g.canEdit === true;
+    const gidJs  = jsq(g.id);
     const banner = g.bannerUrl || g.iconUrl || '';
-    const bannerHtml = banner ? `<div class="fd-banner"><img src="${banner}" onerror="this.parentElement.style.display='none'"><div class="fd-banner-fade"></div></div>` : '';
+    const bannerEditBtn = canEdit ? `<button class="myp-edit-btn" style="position:absolute;top:8px;right:8px;z-index:2;" onclick="openImagePicker('group-banner','${gidJs}')" title="Change banner"><span class="msi" style="font-size:13px;">edit</span></button>` : '';
+    const bannerHtml = banner
+        ? `<div class="fd-banner">${bannerEditBtn}<img src="${banner}" onerror="this.parentElement.style.display='none'"><div class="fd-banner-fade"></div></div>`
+        : (canEdit ? `<div style="display:flex;justify-content:flex-end;padding:4px 0 2px 0;"><button class="myp-edit-btn" onclick="openImagePicker('group-banner','${gidJs}')" title="Add banner"><span class="msi" style="font-size:13px;">edit</span><span style="font-size:11px;margin-left:3px;">Banner</span></button></div>` : '');
 
     // Header
-    const iconHtml = g.iconUrl ? `<img class="fd-avatar" src="${g.iconUrl}" onerror="this.style.display='none'">` : '';
+    const iconEditBtn = canEdit ? `<button class="myp-edit-btn" style="position:absolute;bottom:-4px;right:-4px;padding:2px;min-width:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;" onclick="openImagePicker('group-icon','${gidJs}')" title="Change icon"><span class="msi" style="font-size:11px;">edit</span></button>` : '';
+    const iconHtml = g.iconUrl
+        ? `<div style="position:relative;display:inline-block;flex-shrink:0;"><img class="fd-avatar" src="${g.iconUrl}" onerror="this.style.display='none'">${iconEditBtn}</div>`
+        : (canEdit ? `<div style="position:relative;display:inline-block;flex-shrink:0;"><div class="fd-avatar" style="display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:var(--tx3);">${esc((g.name||'?')[0])}</div>${iconEditBtn}</div>` : '');
     const headerHtml = `<div class="fd-content${banner ? ' fd-has-banner' : ''}"><div class="fd-header">${iconHtml}<div><div class="fd-name">${esc(g.name)}</div><div class="fd-status">${esc(g.shortCode)} · ${g.memberCount} members · ${esc(g.privacy)}</div></div></div>`;
 
     // Actions - moved to bottom bar
@@ -54,7 +62,6 @@ function renderGroupDetail(g) {
         : `<button class="fd-btn fd-btn-join" onclick="sendToCS({action:'vrcJoinGroup',groupId:'${esc(g.id)}'});document.getElementById('modalDetail').style.display='none';"><span class="msi" style="font-size:16px;vertical-align:middle;margin-right:4px;">group_add</span>Join Group</button>`;
 
     // Tab: Info
-    const canEdit = g.canEdit === true;
     const gid_e = esc(g.id);
     const grpLangs = (g.languages || []);
     const grpLinks = (g.links || []).filter(Boolean);
