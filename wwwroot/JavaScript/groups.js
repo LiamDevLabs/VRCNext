@@ -504,7 +504,6 @@ function openGroupPostModal(groupId) {
         <div class="gp-modal-header">
             <span class="msi" style="font-size:20px;color:var(--accent);">edit</span>
             <span>Create Group Post</span>
-            <button class="fd-btn" onclick="closeGroupPostModal()" style="padding:4px 8px;" title="Close"><span class="msi" style="font-size:18px;">close</span></button>
         </div>
         <div class="gp-modal-body">
             <label class="gp-label">Title</label>
@@ -548,8 +547,8 @@ function openGroupPostModal(groupId) {
             <div id="gpError" style="display:none;margin-top:8px;padding:8px 10px;background:rgba(255,80,80,.12);border-radius:8px;color:var(--err);font-size:12px;"></div>
         </div>
         <div class="gp-modal-footer">
-            <button class="fd-btn" onclick="closeGroupPostModal()">Cancel</button>
             <button class="fd-btn fd-btn-join" id="gpSubmitBtn" onclick="submitGroupPost()"><span class="msi" style="font-size:16px;vertical-align:middle;margin-right:4px;">send</span>Post</button>
+            <button class="fd-btn" onclick="closeGroupPostModal()" style="margin-left:auto;">Cancel</button>
         </div>
     </div>`;
     initAllVnSelects();
@@ -706,7 +705,6 @@ function openGroupEventModal(groupId) {
         <div class="gp-modal-header">
             <span class="msi" style="font-size:20px;color:var(--accent);">event</span>
             <span>Create Group Event</span>
-            <button class="fd-btn" onclick="closeGroupEventModal()" style="padding:4px 8px;" title="Close"><span class="msi" style="font-size:18px;">close</span></button>
         </div>
         <div class="gp-modal-body">
             <label class="gp-label">Event Name</label>
@@ -784,8 +782,8 @@ function openGroupEventModal(groupId) {
             <div id="gevError" style="display:none;margin-top:8px;padding:8px 10px;background:rgba(255,80,80,.12);border-radius:8px;color:var(--err);font-size:12px;"></div>
         </div>
         <div class="gp-modal-footer">
-            <button class="fd-btn" onclick="closeGroupEventModal()">Cancel</button>
             <button class="fd-btn fd-btn-join" id="gevSubmitBtn" onclick="submitGroupEvent()"><span class="msi" style="font-size:16px;vertical-align:middle;margin-right:4px;">event</span>Create Event</button>
+            <button class="fd-btn" onclick="closeGroupEventModal()" style="margin-left:auto;">Cancel</button>
         </div>
     </div>`;
     initAllVnSelects();

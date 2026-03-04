@@ -3679,8 +3679,14 @@ body {
     padding: 14px 20px;
     display: flex;
     gap: 10px;
-    justify-content: flex-end;
+    justify-content: flex-start;
     flex-shrink: 0;
+}
+
+.gp-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(42%) sepia(93%) saturate(1352%) hue-rotate(199deg) brightness(119%) contrast(97%);
+    cursor: pointer;
+    opacity: 0.85;
 }
 
 /* Add friend accent button — inherits theme from .fd-btn */
