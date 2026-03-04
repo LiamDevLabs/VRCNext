@@ -1407,8 +1407,9 @@ public class MainForm : Form
                             var g = await _vrcApi.GetGroupAsync(ggId);
                             if (g != null)
                             {
+                                bool isMember = g["myMember"] != null && g["myMember"]!.Type != JTokenType.Null;
                                 // Fetch additional data in parallel
-                                var postsTask = _vrcApi.GetGroupPostsAsync(ggId);
+                                var postsTask = _vrcApi.GetGroupPostsAsync(ggId, publicOnly: !isMember);
                                 var instancesTask = _vrcApi.GetGroupInstancesAsync(ggId);
                                 var membersTask = _vrcApi.GetGroupMembersAsync(ggId);
                                 var eventsTask = _vrcApi.GetGroupEventsAsync(ggId);

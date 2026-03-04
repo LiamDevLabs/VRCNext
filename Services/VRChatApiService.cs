@@ -1119,12 +1119,13 @@ public class VRChatApiService
         catch (Exception ex) { Log($"LeaveGroup exception: {ex.Message}"); return false; }
     }
 
-    public async Task<JArray> GetGroupPostsAsync(string groupId, int n = 10)
+    public async Task<JArray> GetGroupPostsAsync(string groupId, int n = 10, bool publicOnly = false)
     {
         if (!IsLoggedIn) return new JArray();
         try
         {
-            var resp = await _http.GetAsync($"{BASE}/groups/{groupId}/posts?n={n}&offset=0");
+            var url = $"{BASE}/groups/{groupId}/posts?n={n}&offset=0{(publicOnly ? "&publicOnly=true" : "")}";
+            var resp = await _http.GetAsync(url);
             var body = await resp.Content.ReadAsStringAsync();
             Log($"GetGroupPosts({groupId}): status={(int)resp.StatusCode}, bodyLen={body.Length}, preview={body.Substring(0, Math.Min(300, body.Length))}");
             if (resp.IsSuccessStatusCode)
@@ -1146,12 +1147,21 @@ public class VRChatApiService
 
     public async Task<JArray> GetGroupInstancesAsync(string groupId)
     {
-        if (!IsLoggedIn) return new JArray();
+        if (!IsLoggedIn || CurrentUserId == null) return new JArray();
         try
         {
-            var resp = await _http.GetAsync($"{BASE}/groups/{groupId}/instances");
-            if (resp.IsSuccessStatusCode) return JArray.Parse(await resp.Content.ReadAsStringAsync());
-            Log($"GetGroupInstances({groupId}): {(int)resp.StatusCode}");
+            // Use /users/{userId}/instances/groups/{groupId} — works for members AND non-members
+            // (VRCX pattern: returns groupPublic instances even if not a member)
+            var resp = await _http.GetAsync($"{BASE}/users/{CurrentUserId}/instances/groups/{groupId}");
+            var body = await resp.Content.ReadAsStringAsync();
+            Log($"GetGroupInstances({groupId}): {(int)resp.StatusCode}, len={body.Length}");
+            if (resp.IsSuccessStatusCode)
+            {
+                var token = JToken.Parse(body);
+                // Response shape: { "fetchedAt": "...", "instances": [...] }
+                if (token is JObject obj && obj["instances"] is JArray arr) return arr;
+                if (token is JArray directArr) return directArr;
+            }
         }
         catch (Exception ex) { Log($"GetGroupInstances exception: {ex.Message}"); }
         return new JArray();
