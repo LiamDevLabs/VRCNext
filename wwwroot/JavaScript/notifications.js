@@ -33,38 +33,64 @@ function renderNotifications(list) {
     const el = document.getElementById('notifList');
     if (notifications.length === 0) { el.innerHTML = '<div class="empty-msg">No notifications</div>'; return; }
     el.innerHTML = notifications.map(n => {
-        // Map all VRChat notification types
+        // Map notification type → icon + label
         let icon = 'notifications', label = n.type;
         switch (n.type) {
-            case 'friendRequest': icon = 'person_add'; label = 'Friend Request'; break;
-            case 'invite': icon = 'mail'; label = 'World Invite'; break;
-            case 'requestInvite': icon = 'forward_to_inbox'; label = 'Invite Request'; break;
-            case 'inviteResponse': icon = 'reply'; label = 'Invite Response'; break;
-            case 'requestInviteResponse': icon = 'reply_all'; label = 'Invite Req. Response'; break;
-            case 'votetokick': icon = 'gavel'; label = 'Vote to Kick'; break;
-            case 'group.announcement': icon = 'campaign'; label = 'Group Announcement'; break;
-            case 'group.invite': icon = 'group_add'; label = 'Group Invite'; break;
-            case 'group.joinRequest': icon = 'group'; label = 'Group Join Request'; break;
-            case 'group.informationRequest': icon = 'info'; label = 'Group Info Request'; break;
-            case 'group.transfer': icon = 'swap_horiz'; label = 'Group Transfer'; break;
-            default: if (n.type.startsWith('group.')) { icon = 'groups'; label = n.type.replace('group.', 'Group: '); }
+            // v1 types
+            case 'friendRequest':          icon = 'person_add';          label = 'Friend Request'; break;
+            case 'invite':                 icon = 'mail';                 label = 'World Invite'; break;
+            case 'requestInvite':          icon = 'forward_to_inbox';    label = 'Invite Request'; break;
+            case 'inviteResponse':         icon = 'reply';                label = 'Invite Response'; break;
+            case 'requestInviteResponse':  icon = 'reply_all';            label = 'Invite Req. Response'; break;
+            case 'votetokick':             icon = 'gavel';                label = 'Vote to Kick'; break;
+            case 'boop':                   icon = 'waving_hand';          label = 'Boop'; break;
+            case 'message':                icon = 'chat';                 label = 'Message'; break;
+            // group types (v1 + v2)
+            case 'group.announcement':     icon = 'campaign';             label = 'Group Announcement'; break;
+            case 'group.invite':           icon = 'group_add';            label = 'Group Invite'; break;
+            case 'group.joinRequest':      icon = 'group';                label = 'Group Join Request'; break;
+            case 'group.informationRequest': icon = 'info';               label = 'Group Info Request'; break;
+            case 'group.transfer':         icon = 'swap_horiz';           label = 'Group Transfer'; break;
+            case 'group.informative':      icon = 'info';                 label = 'Group Info'; break;
+            case 'group.post':             icon = 'article';              label = 'Group Post'; break;
+            case 'group.event.created':    icon = 'event_note';           label = 'Group Event'; break;
+            case 'group.event.starting':   icon = 'event_available';      label = 'Group Event Starting'; break;
+            // v2-only types
+            case 'avatarreview.success':   icon = 'check_circle';         label = 'Avatar Approved'; break;
+            case 'avatarreview.failure':   icon = 'cancel';               label = 'Avatar Rejected'; break;
+            case 'badge.earned':           icon = 'military_tech';        label = 'Badge Earned'; break;
+            case 'economy.alert':          icon = 'account_balance_wallet'; label = 'Economy Alert'; break;
+            case 'economy.received.gift':  icon = 'card_giftcard';        label = 'Gift Received'; break;
+            case 'event.announcement':     icon = 'event';                label = 'Event'; break;
+            case 'invite.instance.contentGated': icon = 'lock';           label = 'Content Gated Invite'; break;
+            case 'moderation.contentrestriction': icon = 'shield';        label = 'Content Restriction'; break;
+            case 'moderation.notice':      icon = 'policy';               label = 'Moderation Notice'; break;
+            case 'moderation.report.closed': icon = 'task_alt';           label = 'Report Closed'; break;
+            case 'moderation.warning.group': icon = 'warning';            label = 'Group Warning'; break;
+            case 'promo.redeem':           icon = 'local_offer';          label = 'Promo Redeemed'; break;
+            case 'text.adventure':         icon = 'auto_stories';         label = 'Text Adventure'; break;
+            case 'vrcplus.gift':           icon = 'volunteer_activism';   label = 'VRC+ Gift'; break;
+            default: if (n.type && n.type.startsWith('group.')) { icon = 'groups'; label = n.type.replace('group.', 'Group: '); }
         }
         const time = n.created_at ? new Date(n.created_at).toLocaleString() : '';
         const canAccept = ['friendRequest','invite','requestInvite','group.invite','group.joinRequest'].includes(n.type);
         const nid = esc(n.id);
         const senderLink = n.senderUserId
-            ? `<strong style="cursor:pointer;" onclick="toggleNotifPanel();openFriendDetail('${esc(n.senderUserId)}')">${esc(n.senderUsername)}</strong>`
-            : `<strong>${esc(n.senderUsername)}</strong>`;
+            ? `<strong style="cursor:pointer;" onclick="toggleNotifPanel();openFriendDetail('${esc(n.senderUserId)}')">${esc(n.senderUsername || n.senderUserId)}</strong>`
+            : (n.senderUsername ? `<strong>${esc(n.senderUsername)}</strong>` : '');
         // VRChat REST API sends `details` as a stringified JSON string — parse it
         const det = typeof n.details === 'string' ? (() => { try { return JSON.parse(n.details); } catch { return {}; } })() : (n.details || {});
         let titleHtml, bodyHtml = '';
-        if (n.type === 'invite') {
+        if (n._v2 && n._title) {
+            // v2: VRChat provides a pre-built title — use it directly
+            titleHtml = esc(n._title);
+            if (n.message) bodyHtml = `<div class="notif-msg">${esc(n.message)}</div>`;
+        } else if (n.type === 'invite') {
             const worldName = det.worldName ? esc(det.worldName) : 'unknown world';
             const wid = det.worldId ? det.worldId.split(':')[0] : '';
             const worldLink = wid
                 ? `<strong style="cursor:pointer;" onclick="toggleNotifPanel();openWorldDetail('${esc(wid)}')">${worldName}</strong>`
                 : `<strong>${worldName}</strong>`;
-            // invite message is in details.inviteMessage (not top-level message)
             const msg = det.inviteMessage || '';
             titleHtml = `${senderLink} <span style="color:var(--tx2);font-weight:400;">invited you to</span> ${worldLink}`;
             if (msg) bodyHtml = `<div class="notif-msg">${esc(msg)}</div>`;
@@ -72,8 +98,14 @@ function renderNotifications(list) {
             const msg = det.requestMessage || '';
             titleHtml = `${senderLink} <span style="color:var(--tx2);font-weight:400;">wants an invite</span>`;
             if (msg) bodyHtml = `<div class="notif-msg">${esc(msg)}</div>`;
+        } else if (n.type === 'boop') {
+            titleHtml = `${senderLink} <span style="color:var(--tx2);font-weight:400;">booped you</span>`;
+        } else if (n.type === 'inviteResponse' || n.type === 'requestInviteResponse') {
+            titleHtml = senderLink ? `${esc(label)} from ${senderLink}` : esc(label);
+            const msg = det.responseMessage || det.requestMessage || det.inviteMessage || n.message || '';
+            if (msg) bodyHtml = `<div class="notif-msg">${esc(msg)}</div>`;
         } else {
-            titleHtml = `${esc(label)} from ${senderLink}`;
+            titleHtml = senderLink ? `${esc(label)} from ${senderLink}` : esc(label);
             if (n.message) bodyHtml = `<div class="notif-msg">${esc(n.message)}</div>`;
         }
         return `<div class="notif-item ${n.seen && !canAccept ? 'notif-seen' : ''}">
@@ -95,9 +127,13 @@ function acceptNotif(notifId, btn) {
     if (btn) { btn.disabled = true; btn.textContent = '...'; }
     const n = notifications.find(x => x.id === notifId);
     const det = typeof n?.details === 'string' ? (() => { try { return JSON.parse(n.details); } catch { return {}; } })() : (n?.details || {});
-    sendToCS({ action: 'vrcAcceptNotification', notifId, type: n?.type, details: det });
-    if (n) n.seen = true;
-    setTimeout(() => refreshNotifications(), 800);
+    sendToCS({ action: 'vrcAcceptNotification', notifId, type: n?.type, details: det,
+               _v2: n?._v2 || false, _data: n?._data || null, _link: n?._link || null,
+               senderId: n?.senderUserId || null });
+    // Remove immediately so the merge logic doesn't re-add it after REST refresh
+    notifications = notifications.filter(x => x.id !== notifId);
+    renderNotifications(notifications);
+    setTimeout(() => refreshNotifications(), 1200);
 }
 
 function showLaunchModal(location, steamVrOpen) {
@@ -139,7 +175,12 @@ function closeLaunchModal() {
 
 function declineNotif(notifId, btn) {
     if (btn) { btn.disabled = true; btn.textContent = '...'; }
-    sendToCS({ action: 'vrcHideNotification', notifId });
+    const n = notifications.find(x => x.id === notifId);
+    const det = typeof n?.details === 'string' ? (() => { try { return JSON.parse(n.details); } catch { return {}; } })() : (n?.details || {});
+    sendToCS({ action: 'vrcHideNotification', notifId,
+               type: n?.type, _v2: n?._v2 || false,
+               details: det, _data: n?._data || null, _link: n?._link || null,
+               senderId: n?.senderUserId || null });
     // Remove locally immediately
     notifications = notifications.filter(x => x.id !== notifId);
     setTimeout(() => renderNotifications(notifications), 300);

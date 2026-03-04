@@ -1440,9 +1440,10 @@ public class MainForm : Form
                                     groupEvents = events.Select(e => new {
                                         title = e["title"]?.ToString() ?? "",
                                         description = e["description"]?.ToString() ?? "",
-                                        startDate = e["startDate"]?.ToString() ?? "",
-                                        endDate = e["endDate"]?.ToString() ?? "",
-                                        location = e["location"]?.ToString() ?? "",
+                                        startDate = e["startsAt"]?.ToString() ?? e["startDate"]?.ToString() ?? "",
+                                        endDate = e["endsAt"]?.ToString() ?? e["endDate"]?.ToString() ?? "",
+                                        imageUrl = e["imageUrl"]?.ToString() ?? "",
+                                        accessType = e["accessType"]?.ToString() ?? "",
                                     }),
                                     groupInstances = instances.Select(i => new {
                                         instanceId = i["instanceId"]?.ToString() ?? "",
@@ -2110,29 +2111,36 @@ public class MainForm : Form
                     break;
 
                 case "vrcAcceptNotification":
+                {
                     var anId   = msg["notifId"]?.ToString();
                     var anType = msg["type"]?.ToString();
-                    // details can be a nested JObject or a JSON-encoded string — handle both
+                    var anIsV2 = msg["_v2"]?.Value<bool>() ?? false;
+
+                    // details: nested JObject or JSON-encoded string (v1)
                     JObject? anDet = null;
-                    {
-                        var rawDet = msg["details"];
-                        if (rawDet is JObject detObj) anDet = detObj;
-                        else if (rawDet?.Type == JTokenType.String)
-                            try { anDet = JObject.Parse(rawDet.ToString()); } catch { }
-                    }
-                    SendToJS("log", new { msg = $"AcceptNotif: type={anType} vrcRunning={IsVrcRunning()} details={anDet?.ToString(Newtonsoft.Json.Formatting.None) ?? "null"}", color = "ok" });
+                    { var rawDet = msg["details"];
+                      if (rawDet is JObject d1) anDet = d1;
+                      else if (rawDet?.Type == JTokenType.String) try { anDet = JObject.Parse(rawDet.ToString()); } catch { } }
+
+                    // _data: v2 group-specific payload (groupId, requestUserId, etc.)
+                    JObject? anData = null;
+                    { var rawData = msg["_data"];
+                      if (rawData is JObject d2) anData = d2;
+                      else if (rawData?.Type == JTokenType.String) try { anData = JObject.Parse(rawData.ToString()); } catch { } }
+
+                    var anLink = msg["_link"]?.ToString();
+                    SendToJS("log", new { msg = $"AcceptNotif: type={anType} v2={anIsV2} det={anDet?.ToString(Newtonsoft.Json.Formatting.None)??"null"} data={anData?.ToString(Newtonsoft.Json.Formatting.None)??"null"}", color = "ok" });
+
                     if (!string.IsNullOrEmpty(anId))
                     {
-                        if (anType == "invite" && anDet != null)
+                        if (anType == "invite")
                         {
-                            // VRChat API puts the full location string in details.worldId
-                            // e.g. "wrld_xxx:instanceId~modifiers" — no separate instanceId field
-                            var invLoc = anDet["worldId"]?.ToString();
+                            // World invite: join the instance
+                            var invLoc = anDet?["worldId"]?.ToString();
                             if (!string.IsNullOrEmpty(invLoc) && invLoc.Contains(":"))
                             {
                                 if (IsVrcRunning())
                                 {
-                                    // Self-invite to actually join; also accept to dismiss the notification
                                     _ = Task.Run(async () => {
                                         var ok = await _vrcApi.InviteSelfAsync(invLoc);
                                         await _vrcApi.AcceptNotificationAsync(anId);
@@ -2147,14 +2155,96 @@ public class MainForm : Form
                                 break;
                             }
                         }
-                        // Non-invite or no location details — just accept/dismiss
+                        else if (anType == "group.invite")
+                        {
+                            // Group invite: join via Groups API (not notification accept endpoint)
+                            var groupId = anDet?["groupId"]?.ToString()
+                                       ?? anData?["groupId"]?.ToString()
+                                       ?? ExtractGroupIdFromLink(anLink);
+                            if (!string.IsNullOrEmpty(groupId))
+                            {
+                                _ = Task.Run(async () => {
+                                    var ok = await _vrcApi.JoinGroupAsync(groupId);
+                                    await _vrcApi.HideNotificationAsync(anId, anIsV2);
+                                    Invoke(() => SendToJS("vrcActionResult", new { action = "acceptNotif", success = ok,
+                                        message = ok ? "Group joined!" : "Failed to join group.", groupJoined = ok }));
+                                    if (ok) _ = VrcGetNotificationsAsync();
+                                });
+                                break;
+                            }
+                        }
+                        else if (anType == "group.joinRequest")
+                        {
+                            // Someone wants to join your group — approve via Groups API
+                            var groupId       = anDet?["groupId"]?.ToString()
+                                             ?? anData?["groupId"]?.ToString()
+                                             ?? ExtractGroupIdFromLink(anLink);
+                            var groupShortCode = anData?["groupName"]?.ToString() ?? anDet?["groupName"]?.ToString();
+                            var requestUser   = anDet?["requestUserId"]?.ToString()
+                                             ?? anData?["requestUserId"]?.ToString()
+                                             ?? anDet?["userId"]?.ToString()
+                                             ?? anData?["userId"]?.ToString()
+                                             ?? msg["senderId"]?.ToString();
+                            _ = Task.Run(async () => {
+                                // Resolve groupId via shortCode lookup if not directly in payload
+                                var resolvedGroupId = groupId;
+                                if (string.IsNullOrEmpty(resolvedGroupId) && !string.IsNullOrEmpty(groupShortCode))
+                                    resolvedGroupId = await _vrcApi.FindGroupIdByShortCodeAsync(groupShortCode);
+                                if (!string.IsNullOrEmpty(resolvedGroupId) && !string.IsNullOrEmpty(requestUser))
+                                {
+                                    var ok = await _vrcApi.RespondGroupJoinRequestAsync(resolvedGroupId, requestUser, "accept");
+                                    await _vrcApi.HideNotificationAsync(anId, anIsV2);
+                                    Invoke(() => SendToJS("vrcActionResult", new { action = "acceptNotif", success = ok,
+                                        message = ok ? "Join request approved!" : "Failed to approve." }));
+                                    if (ok) _ = VrcGetNotificationsAsync();
+                                }
+                                else
+                                {
+                                    Invoke(() => SendToJS("log", new { msg = $"group.joinRequest: could not resolve groupId (shortCode={groupShortCode}) or requestUser", color = "warn" }));
+                                }
+                            });
+                            break;
+                        }
+                        else if (anType == "friendRequest")
+                        {
+                            // Friend request: v1 notification accept endpoint
+                            _ = Task.Run(async () => {
+                                var ok = await _vrcApi.AcceptNotificationAsync(anId);
+                                Invoke(() => SendToJS("vrcActionResult", new { action = "acceptNotif", success = ok,
+                                    message = ok ? "Friend request accepted!" : "Failed." }));
+                                if (ok) _ = VrcGetNotificationsAsync();
+                            });
+                            break;
+                        }
+                        else if (anType == "requestInvite")
+                        {
+                            // Someone asked for an invite — send them to our current world via POST /invite/{userId}
+                            var requesterId = msg["senderId"]?.ToString();
+                            _ = Task.Run(async () => {
+                                bool ok = false;
+                                if (!string.IsNullOrEmpty(requesterId))
+                                    ok = await _vrcApi.InviteFriendAsync(requesterId);
+                                // fallback: try notification accept endpoint
+                                if (!ok)
+                                    ok = await _vrcApi.AcceptNotificationAsync(anId);
+                                else
+                                    await _vrcApi.HideNotificationAsync(anId, anIsV2);
+                                Invoke(() => SendToJS("vrcActionResult", new { action = "acceptNotif", success = ok,
+                                    message = ok ? "Invite sent!" : "Failed. Are you in a world?" }));
+                                if (ok) _ = VrcGetNotificationsAsync();
+                            });
+                            break;
+                        }
+
+                        // Fallback for any other acceptable type
                         _ = Task.Run(async () => {
                             var ok = await _vrcApi.AcceptNotificationAsync(anId);
                             Invoke(() => SendToJS("vrcActionResult", new { action = "acceptNotif", success = ok,
-                                message = ok ? "Accepted!" : "Failed" }));
+                                message = ok ? "Accepted!" : "Failed." }));
                         });
                     }
                     break;
+                }
 
                 case "vrcLaunchAndJoin":
                     var llLoc = msg["location"]?.ToString() ?? "";
@@ -2220,18 +2310,60 @@ public class MainForm : Form
                     break;
 
                 case "vrcHideNotification":
-                    var hnId = msg["notifId"]?.ToString();
+                {
+                    var hnId   = msg["notifId"]?.ToString();
+                    var hnType = msg["type"]?.ToString();
+                    var hnV2   = msg["_v2"]?.Value<bool>() ?? false;
+
+                    JObject? hnDet = null;
+                    { var r = msg["details"];
+                      if (r is JObject d1) hnDet = d1;
+                      else if (r?.Type == JTokenType.String) try { hnDet = JObject.Parse(r.ToString()); } catch { } }
+
+                    JObject? hnData = null;
+                    { var r = msg["_data"];
+                      if (r is JObject d2) hnData = d2;
+                      else if (r?.Type == JTokenType.String) try { hnData = JObject.Parse(r.ToString()); } catch { } }
+
+                    var hnLink = msg["_link"]?.ToString();
+
                     if (!string.IsNullOrEmpty(hnId))
                     {
-                        _ = Task.Run(async () => {
-                            var ok = await _vrcApi.HideNotificationAsync(hnId);
-                            Invoke(() => {
-                                SendToJS("vrcActionResult", new { action = "hideNotif", success = ok,
-                                    message = ok ? "Declined" : "Failed" });
-                            });
+                        _ = Task.Run(async () =>
+                        {
+                            bool ok;
+                            if (hnType == "group.joinRequest")
+                            {
+                                // Reject via Groups API — also hides the notification on VRChat's side
+                                var groupId       = hnDet?["groupId"]?.ToString() ?? hnData?["groupId"]?.ToString()
+                                                 ?? ExtractGroupIdFromLink(hnLink);
+                                var groupShortCode = hnData?["groupName"]?.ToString() ?? hnDet?["groupName"]?.ToString();
+                                var requestUser   = hnDet?["requestUserId"]?.ToString() ?? hnData?["requestUserId"]?.ToString()
+                                                 ?? hnDet?["userId"]?.ToString()         ?? hnData?["userId"]?.ToString()
+                                                 ?? msg["senderId"]?.ToString();
+                                // Resolve groupId via shortCode lookup if not directly in payload
+                                if (string.IsNullOrEmpty(groupId) && !string.IsNullOrEmpty(groupShortCode))
+                                    groupId = await _vrcApi.FindGroupIdByShortCodeAsync(groupShortCode);
+                                if (!string.IsNullOrEmpty(groupId) && !string.IsNullOrEmpty(requestUser))
+                                    ok = await _vrcApi.RespondGroupJoinRequestAsync(groupId, requestUser, "reject");
+                                else
+                                    ok = await _vrcApi.HideNotificationAsync(hnId, hnV2);
+                            }
+                            else if (hnType == "group.invite")
+                            {
+                                // Decline invite: hide the notification (just dismiss it)
+                                ok = await _vrcApi.HideNotificationAsync(hnId, hnV2);
+                            }
+                            else
+                            {
+                                ok = await _vrcApi.HideNotificationAsync(hnId, hnV2);
+                            }
+                            // Don't show "Failed" toast — notification is already removed locally
+                            if (ok) Invoke(() => SendToJS("vrcActionResult", new { action = "hideNotif", success = true, message = "Declined" }));
                         });
                     }
                     break;
+                }
 
                 // Current instance
                 case "vrcGetCurrentInstance":
@@ -3579,77 +3711,146 @@ var list = avatars.Select(a => new
 
     // Extracted API actions (called from switch-case and WebSocket events)
 
+    // --- Notification helpers ---
+
+    private static string? ExtractGroupIdFromLink(string? link)
+    {
+        if (string.IsNullOrEmpty(link)) return null;
+        var m = System.Text.RegularExpressions.Regex.Match(link, @"grp_[0-9a-f\-]+");
+        return m.Success ? m.Value : null;
+    }
+
+    private static dynamic NormalizeNotifV1(JObject n) => (dynamic)new {
+        id             = n["id"]?.ToString() ?? "",
+        type           = n["type"]?.ToString() ?? "",
+        senderUserId   = n["senderUserId"]?.ToString() ?? "",
+        senderUsername = n["senderUsername"]?.ToString() ?? "",
+        message        = n["message"]?.ToString() ?? "",
+        created_at     = n["created_at"]?.Type == JTokenType.Date
+                           ? n["created_at"]!.Value<DateTime>().ToString("o")
+                           : n["created_at"]?.ToString() ?? DateTime.UtcNow.ToString("o"),
+        seen           = n["seen"]?.Value<bool>() ?? false,
+        details        = n["details"],
+        _v2            = false,
+        _title         = (string?)null,
+        _link          = (string?)null,
+    };
+
+    private static dynamic NormalizeNotifV2(JObject n) => (dynamic)new {
+        id             = n["id"]?.ToString() ?? "",
+        type           = n["type"]?.ToString() ?? "",
+        senderUserId   = n["senderUserId"]?.ToString() ?? "",
+        // v2 uses senderDisplayName; fall back to senderUsername for safety
+        senderUsername = n["senderDisplayName"]?.ToString()
+                      ?? n["senderUsername"]?.ToString()
+                      ?? "",
+        message        = n["message"]?.ToString() ?? "",
+        created_at     = n["createdAt"]?.Type == JTokenType.Date
+                           ? n["createdAt"]!.Value<DateTime>().ToString("o")
+                           : n["createdAt"]?.ToString() ?? DateTime.UtcNow.ToString("o"),
+        seen           = n["seen"]?.Value<bool>() ?? false,
+        details        = (object?)null,
+        _v2            = true,
+        _title         = n["title"]?.ToString(),
+        _link          = n["link"]?.ToString(),
+        _data          = n["data"],  // group-specific data: groupId, requestUserId, etc.
+    };
+
+    /// <summary>
+    /// Process a single notification: add to timeline, send to JS.
+    /// If prependToJs is true, sends vrcNotificationPrepend (WS path).
+    /// Returns the timeline payload so the caller can batch if needed.
+    /// </summary>
+    private object? ProcessSingleNotif(dynamic n, bool prependToJs)
+    {
+        if (_timeline.IsLoggedNotif((string)n.id)) return null;
+        _timeline.AddLoggedNotif((string)n.id);
+
+        var senderImg    = "";
+        var senderUserId = (string?)n.senderUserId;
+        if (!string.IsNullOrEmpty(senderUserId))
+        {
+            lock (_playerImageCache)
+                if (_playerImageCache.TryGetValue(senderUserId, out var cached))
+                    senderImg = cached.image;
+        }
+
+        var notifEv = new TimelineService.TimelineEvent
+        {
+            Type        = "notification",
+            Timestamp   = n.created_at,
+            NotifId     = n.id,
+            NotifType   = n.type,
+            SenderName  = n.senderUsername,
+            SenderId    = n.senderUserId,
+            SenderImage = senderImg,
+            Message     = n.message,
+        };
+        _timeline.AddEvent(notifEv);
+
+        if (prependToJs)
+            Invoke(() => {
+                SendToJS("vrcNotificationPrepend", n);
+                SendToJS("timelineEvent", BuildTimelinePayload(notifEv));
+            });
+
+        // Async image fetch if not cached
+        if (string.IsNullOrEmpty(senderImg) && !string.IsNullOrEmpty(senderUserId) && _vrcApi.IsLoggedIn)
+        {
+            var evId = notifEv.Id;
+            var uid  = senderUserId;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var profile = await _vrcApi.GetUserAsync(uid);
+                    if (profile == null) return;
+                    var img = VRChatApiService.GetUserImage(profile);
+                    if (string.IsNullOrEmpty(img)) return;
+                    lock (_playerImageCache) _playerImageCache[uid] = (img, DateTime.Now);
+                    _timeline.UpdateEvent(evId, ev => ev.SenderImage = img);
+                    var updated = _timeline.GetEvents().FirstOrDefault(e => e.Id == evId);
+                    if (updated != null) Invoke(() => SendToJS("timelineEvent", BuildTimelinePayload(updated)));
+                }
+                catch { }
+            });
+        }
+
+        return BuildTimelinePayload(notifEv);
+    }
+
+    /// <summary>REST fetch of v1+v2 — used on login and reconnect to catch missed notifications.</summary>
     private Task VrcGetNotificationsAsync() => Task.Run(async () =>
     {
-        var notifs = await _vrcApi.GetNotificationsAsync();
-        var list = notifs.Cast<JObject>().Select(n => new {
-            id             = n["id"]?.ToString() ?? "",
-            type           = n["type"]?.ToString() ?? "",
-            senderUserId   = n["senderUserId"]?.ToString() ?? "",
-            senderUsername = n["senderUsername"]?.ToString() ?? "",
-            message        = n["message"]?.ToString() ?? "",
-            created_at     = n["created_at"]?.Type == JTokenType.Date
-                               ? n["created_at"]!.Value<DateTime>().ToString("o")
-                               : n["created_at"]?.ToString() ?? "",
-            seen           = n["seen"]?.Value<bool>() ?? false,
-            details        = n["details"],
-        }).ToList();
+        var t1 = _vrcApi.GetNotificationsAsync();
+        var t2 = _vrcApi.GetNotificationsV2Async();
+        await Task.WhenAll(t1, t2);
 
-        var newNotifEvs = new List<object>();
+        var list = t1.Result.Cast<JObject>().Select(NormalizeNotifV1).ToList();
+        Invoke(() => SendToJS("log", new { msg = $"[Notif REST] v1={t1.Result.Count} types=[{string.Join(",", t1.Result.Cast<JObject>().Select(n => n["type"]?.ToString()))}]", color = "sec" }));
+
+        var v2Ids = new HashSet<string>(list.Select(n => (string)n.id));
+        foreach (JObject n in t2.Result.Cast<JObject>())
+        {
+            var id = n["id"]?.ToString() ?? "";
+            if (v2Ids.Contains(id)) continue;
+            list.Add(NormalizeNotifV2(n));
+        }
+        Invoke(() => SendToJS("log", new { msg = $"[Notif REST] v2={t2.Result.Count} types=[{string.Join(",", t2.Result.Cast<JObject>().Select(n => n["type"]?.ToString()))}]", color = "sec" }));
+
+        list = list.OrderByDescending(n => (string)n.created_at).ToList();
+
+        var newTimeline = new List<object>();
         foreach (var n in list)
         {
-            if (_timeline.IsLoggedNotif(n.id)) continue;
-            _timeline.AddLoggedNotif(n.id);
-
-            // Try to get sender image from cache; fetch async if missing
-            var senderImg = "";
-            if (!string.IsNullOrEmpty(n.senderUserId))
-            {
-                lock (_playerImageCache)
-                    if (_playerImageCache.TryGetValue(n.senderUserId, out var cached))
-                        senderImg = cached.image;
-            }
-
-            var notifEv = new TimelineService.TimelineEvent
-            {
-                Type        = "notification",
-                Timestamp   = n.created_at,
-                NotifId     = n.id,
-                NotifType   = n.type,
-                SenderName  = n.senderUsername,
-                SenderId    = n.senderUserId,
-                SenderImage = senderImg,
-                Message     = n.message
-            };
-            _timeline.AddEvent(notifEv);
-            newNotifEvs.Add(BuildTimelinePayload(notifEv));
-
-            // Fetch image async if not cached, then update the timeline event
-            if (string.IsNullOrEmpty(senderImg) && !string.IsNullOrEmpty(n.senderUserId) && _vrcApi.IsLoggedIn)
-            {
-                var evId = notifEv.Id;
-                var uid  = n.senderUserId;
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        var profile = await _vrcApi.GetUserAsync(uid);
-                        if (profile == null) return;
-                        var img = VRChatApiService.GetUserImage(profile);
-                        if (string.IsNullOrEmpty(img)) return;
-                        lock (_playerImageCache) _playerImageCache[uid] = (img, DateTime.Now);
-                        _timeline.UpdateEvent(evId, ev => ev.SenderImage = img);
-                        var updated = _timeline.GetEvents().FirstOrDefault(e => e.Id == evId);
-                        if (updated != null) Invoke(() => SendToJS("timelineEvent", BuildTimelinePayload(updated)));
-                    }
-                    catch { }
-                });
-            }
+            var ev = ProcessSingleNotif(n, prependToJs: false);
+            if (ev != null) newTimeline.Add(ev);
         }
+
         Invoke(() =>
         {
             SendToJS("vrcNotifications", list);
-            foreach (var ev in newNotifEvs)
+            foreach (var ev in newTimeline)
                 SendToJS("timelineEvent", ev);
         });
     });
@@ -3833,10 +4034,31 @@ var list = avatars.Select(a => new
                 _ = VrcRefreshFriendsAsync(true);
         };
 
-        _wsService.NotificationArrived += (_, _) =>
+        _wsService.NotificationArrived += (_, args) =>
         {
-            if (_vrcApi.IsLoggedIn)
+            if (!_vrcApi.IsLoggedIn) return;
+            // update/delete or missing payload → full REST refresh
+            if (args.WsType is "notification-v2-update" or "notification-v2-delete" || args.Data == null)
+            {
                 _ = VrcGetNotificationsAsync();
+                return;
+            }
+            // notification/notification-v2: process the WS payload directly — no REST needed
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    var n = args.WsType == "notification-v2"
+                        ? NormalizeNotifV2(args.Data)
+                        : NormalizeNotifV1(args.Data);
+                    ProcessSingleNotif(n, prependToJs: true);
+                }
+                catch (Exception ex)
+                {
+                    Invoke(() => SendToJS("log", new { msg = $"[WS Notif] parse error: {ex.Message}", color = "err" }));
+                    _ = VrcGetNotificationsAsync();
+                }
+            });
         };
 
         // Small delay so the VRC API reflects the new location before we query it

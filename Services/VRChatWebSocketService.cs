@@ -16,6 +16,15 @@ public class FriendEventArgs : EventArgs
     public string  Platform { get; init; } = "";
 }
 
+/// <summary>Event args for WebSocket notification events.</summary>
+public class NotificationEventArgs : EventArgs
+{
+    /// <summary>"notification", "notification-v2", "notification-v2-update", "notification-v2-delete"</summary>
+    public string  WsType { get; init; } = "";
+    /// <summary>Parsed content object from the WS message. Null if parsing failed.</summary>
+    public JObject? Data  { get; init; }
+}
+
 /// <summary>
 /// Persistent WebSocket connection to wss://pipeline.vrchat.cloud/
 /// Fires events for friend changes, new notifications, and own location changes.
@@ -30,8 +39,8 @@ internal sealed class VRChatWebSocketService : IDisposable
     /// <summary>Friend was added or removed. Requires a full REST refresh of the friend list.</summary>
     public event EventHandler? FriendListChanged;
 
-    /// <summary>A new notification arrived. Triggers a notification fetch.</summary>
-    public event EventHandler? NotificationArrived;
+    /// <summary>A new notification arrived via WebSocket. Data contains the full notification payload.</summary>
+    public event EventHandler<NotificationEventArgs>? NotificationArrived;
 
     /// <summary>Own location changed (contains the new instance location string).</summary>
     public event EventHandler<string>? OwnLocationChanged;
@@ -317,7 +326,15 @@ internal sealed class VRChatWebSocketService : IDisposable
                 case "notification-v2":
                 case "notification-v2-update":
                 case "notification-v2-delete":
-                    NotificationArrived?.Invoke(this, EventArgs.Empty);
+                    try
+                    {
+                        var c = JObject.Parse(contentStr);
+                        NotificationArrived?.Invoke(this, new NotificationEventArgs { WsType = type, Data = c });
+                    }
+                    catch
+                    {
+                        NotificationArrived?.Invoke(this, new NotificationEventArgs { WsType = type });
+                    }
                     break;
 
                 case "user-location":

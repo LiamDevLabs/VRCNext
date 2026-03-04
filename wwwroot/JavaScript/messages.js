@@ -134,7 +134,7 @@ if (window.chrome?.webview) {
                 } else {
                     showToast(payload.success, payload.message);
                     // Auto-refresh groups list on join/leave (from anywhere in the app)
-                    if (payload.success && (payload.action === 'joinGroup' || payload.action === 'leaveGroup')) {
+                    if (payload.success && (payload.action === 'joinGroup' || payload.action === 'leaveGroup' || payload.groupJoined)) {
                         loadMyGroups();
                     }
                     // Re-enable friend action buttons if open
@@ -302,8 +302,22 @@ if (window.chrome?.webview) {
                 document.getElementById('detailModalContent').innerHTML = `<div style="padding:30px;text-align:center;color:var(--err);">${esc(payload.error || 'Error loading world')}</div><div style="text-align:center;margin-top:10px;"><button class="fd-btn" onclick="document.getElementById('modalDetail').style.display='none'">Close</button></div>`;
                 break;
             case 'vrcNotifications':
-                renderNotifications(payload);
-                showNotificationToasts(payload);
+                // Merge: keep WS-received notifications not present in the REST response
+                // (group announcements / v2 types may not persist in REST endpoint)
+                {
+                    const restIds = new Set((payload || []).map(n => n.id));
+                    const wsOnly = (notifications || []).filter(n => n.id && !restIds.has(n.id));
+                    const merged = [...payload, ...wsOnly].sort((a, b) =>
+                        (new Date(b.created_at) - new Date(a.created_at)) || 0);
+                    renderNotifications(merged);
+                    showNotificationToasts(merged);
+                }
+                break;
+            case 'vrcNotificationPrepend':
+                // Single notification arrived via WebSocket — prepend to existing list
+                notifications = [payload, ...(notifications || []).filter(n => n.id !== payload.id)];
+                renderNotifications(notifications);
+                showNotificationToasts([payload]);
                 break;
             case 'vrcLaunchNeeded':
                 showLaunchModal(payload.location, payload.steamVr);

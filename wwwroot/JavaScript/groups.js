@@ -91,11 +91,13 @@ function renderGroupDetail(g) {
         events.forEach(e => {
             const start = e.startDate ? new Date(e.startDate).toLocaleString() : '';
             const end = e.endDate ? new Date(e.endDate).toLocaleString() : '';
+            const imgHtml = e.imageUrl ? `<img src="${e.imageUrl}" style="width:100%;max-height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px;" onerror="this.style.display='none'">` : '';
+            const badge = e.accessType ? `<span style="font-size:9px;padding:2px 6px;border-radius:10px;background:var(--accent2);color:var(--tx0);margin-left:6px;">${esc(e.accessType)}</span>` : '';
             eventsTab += `<div class="fd-group-card" style="display:block;cursor:default;padding:12px;">
-                <div style="font-size:13px;font-weight:600;color:var(--tx0);">${esc(e.title || 'Untitled Event')}</div>
+                ${imgHtml}
+                <div style="font-size:13px;font-weight:600;color:var(--tx0);">${esc(e.title || 'Untitled Event')}${badge}</div>
                 <div style="font-size:10px;color:var(--tx3);margin:2px 0 4px;">${start}${end ? ' → ' + end : ''}</div>
                 ${e.description ? `<div style="font-size:12px;color:var(--tx2);line-height:1.4;">${esc(e.description)}</div>` : ''}
-                ${e.location ? `<div style="font-size:11px;color:var(--tx3);margin-top:4px;"><span class="msi" style="font-size:12px;vertical-align:middle;">location_on</span> ${esc(e.location)}</div>` : ''}
             </div>`;
         });
     }

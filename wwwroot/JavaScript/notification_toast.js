@@ -40,7 +40,11 @@ function _showNotifCard(n) {
     const sender = esc(n.senderUsername || '?');
 
     let titleHtml, subText = '';
-    if (n.type === 'invite') {
+    if (n._v2 && n._title) {
+        // v2: VRChat pre-builds the title with the correct sender name — use it directly
+        titleHtml = esc(n._title);
+        subText = n.message || '';
+    } else if (n.type === 'invite') {
         const worldName = det.worldName ? esc(det.worldName) : 'a world';
         titleHtml = `<strong>${sender}</strong> <span>invited you to</span> <strong>${worldName}</strong>`;
         subText = det.inviteMessage || '';
@@ -53,6 +57,12 @@ function _showNotifCard(n) {
         titleHtml = `<strong>${sender}</strong> <span>invited you to a group</span>`;
     } else if (n.type === 'group.joinRequest') {
         titleHtml = `<strong>${sender}</strong> <span>wants to join your group</span>`;
+    } else if (n.type === 'inviteResponse') {
+        titleHtml = `<strong>${sender}</strong> <span>responded to your invite</span>`;
+        subText = det.responseMessage || det.requestMessage || det.inviteMessage || n.message || '';
+    } else if (n.type === 'requestInviteResponse') {
+        titleHtml = `<strong>${sender}</strong> <span>responded to your invite request</span>`;
+        subText = det.responseMessage || det.requestMessage || n.message || '';
     } else if (n.type === 'group.announcement') {
         titleHtml = `<span>Group announcement</span>`;
         subText = n.message || '';
@@ -104,9 +114,13 @@ function _acceptNotifCard(notifId, btn) {
     const det = typeof n?.details === 'string'
         ? (() => { try { return JSON.parse(n.details); } catch { return {}; } })()
         : (n?.details || {});
-    sendToCS({ action: 'vrcAcceptNotification', notifId, type: n?.type, details: det });
-    if (n) n.seen = true;
+    sendToCS({ action: 'vrcAcceptNotification', notifId, type: n?.type, details: det,
+               _v2: n?._v2 || false, _data: n?._data || null, _link: n?._link || null,
+               senderId: n?.senderUserId || null });
+    // Remove immediately so the merge logic doesn't re-add it after REST refresh
+    if (typeof notifications !== 'undefined')
+        notifications = notifications.filter(x => x.id !== notifId);
     const card = btn?.closest('.nc-card');
     if (card) setTimeout(() => _dismissNotifCard(card), 900);
-    setTimeout(() => { if (typeof refreshNotifications === 'function') refreshNotifications(); }, 900);
+    setTimeout(() => { if (typeof refreshNotifications === 'function') refreshNotifications(); }, 1200);
 }

@@ -78,6 +78,13 @@ function tsFmtTime(seconds) {
     return `${s}s`;
 }
 
+function tsFmtTimeDH(seconds) {
+    const d = Math.floor(seconds / 86400);
+    const h = Math.floor((seconds % 86400) / 3600);
+    if (d > 0) return `${d}d ${h}h`;
+    return `${h}h`;
+}
+
 function tsFmtTimeLong(seconds) {
     return tsFmtTime(seconds);
 }
@@ -92,7 +99,7 @@ function tsRenderWorlds() {
         <div class="ts-stat-row">
             <div class="ts-stat">
                 <span class="msi ts-stat-icon">schedule</span>
-                <div class="ts-stat-val">${tsFmtTime(totalSec)}</div>
+                <div class="ts-stat-val">${tsFmtTimeDH(totalSec)}</div>
                 <div class="ts-stat-label">Total VRChat Time</div>
             </div>
             <div class="ts-stat">
@@ -192,7 +199,7 @@ function tsRenderPersons() {
             </div>
             <div class="ts-stat">
                 <span class="msi ts-stat-icon">schedule</span>
-                <div class="ts-stat-val">${tsFmtTime(totalWithOthers)}</div>
+                <div class="ts-stat-val">${tsFmtTimeDH(totalWithOthers)}</div>
                 <div class="ts-stat-label">Total Social Time</div>
             </div>
         </div>

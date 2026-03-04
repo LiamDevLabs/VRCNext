@@ -1139,13 +1139,21 @@ public class VRChatApiService
         return new JArray();
     }
 
-    public async Task<JArray> GetGroupEventsAsync(string groupId, int n = 10)
+    public async Task<JArray> GetGroupEventsAsync(string groupId, int n = 60)
     {
         if (!IsLoggedIn) return new JArray();
         try
         {
-            var resp = await _http.GetAsync($"{BASE}/groups/{groupId}/events?n={n}&offset=0");
-            if (resp.IsSuccessStatusCode) return JArray.Parse(await resp.Content.ReadAsStringAsync());
+            var resp = await _http.GetAsync($"{BASE}/calendar/{groupId}?n={n}&offset=0");
+            if (resp.IsSuccessStatusCode)
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                var token = JToken.Parse(body);
+                if (token is JArray arr) return arr;
+                if (token is JObject obj && obj["results"] is JArray results) return results;
+                Log($"GetGroupEvents({groupId}): unexpected shape");
+                return new JArray();
+            }
             Log($"GetGroupEvents({groupId}): {(int)resp.StatusCode}");
         }
         catch (Exception ex) { Log($"GetGroupEvents exception: {ex.Message}"); }
@@ -1295,6 +1303,23 @@ public class VRChatApiService
         return new JArray();
     }
 
+    public async Task<JArray> GetNotificationsV2Async()
+    {
+        if (!IsLoggedIn) return new JArray();
+        try
+        {
+            var resp = await _http.GetAsync($"{BASE}/auth/user/notificationsV2?n=100");
+            if (resp.IsSuccessStatusCode)
+            {
+                var result = JArray.Parse(await resp.Content.ReadAsStringAsync());
+                Log($"GetNotificationsV2: got {result.Count} notifications");
+                return result;
+            }
+        }
+        catch (Exception ex) { Log($"GetNotificationsV2 exception: {ex.Message}"); }
+        return new JArray();
+    }
+
     public async Task<bool> AcceptNotificationAsync(string notifId)
     {
         if (!IsLoggedIn) return false;
@@ -1308,17 +1333,51 @@ public class VRChatApiService
         catch (Exception ex) { Log($"AcceptNotification exception: {ex.Message}"); return false; }
     }
 
-    public async Task<bool> HideNotificationAsync(string notifId)
+    public async Task<bool> HideNotificationAsync(string notifId, bool isV2 = false)
     {
         if (!IsLoggedIn) return false;
         try
         {
+            if (isV2)
+            {
+                // Try v2 delete first
+                var r1 = await _http.DeleteAsync($"{BASE}/auth/user/notificationsV2/{notifId}");
+                Log($"HideNotificationV2 {notifId}: {(int)r1.StatusCode}");
+                if (r1.IsSuccessStatusCode) return true;
+                // Fall back to v1 hide (VRChat may accept v1 hide for cross-version IDs)
+                Log($"HideNotificationV2 fallback to v1 hide");
+            }
             var content = new StringContent("{}", Encoding.UTF8, "application/json");
             var resp = await _http.PutAsync($"{BASE}/auth/user/notifications/{notifId}/hide", content);
-            Log($"HideNotification {notifId}: {(int)resp.StatusCode}");
+            Log($"HideNotification(v1) {notifId}: {(int)resp.StatusCode}");
             return resp.IsSuccessStatusCode;
         }
         catch (Exception ex) { Log($"HideNotification exception: {ex.Message}"); return false; }
+    }
+
+    public async Task<bool> RespondGroupJoinRequestAsync(string groupId, string userId, string action)
+    {
+        if (!IsLoggedIn) return false;
+        try
+        {
+            var body = new StringContent(JsonConvert.SerializeObject(new { action }), Encoding.UTF8, "application/json");
+            var resp = await _http.PutAsync($"{BASE}/groups/{groupId}/requests/{userId}", body);
+            Log($"RespondGroupJoinRequest {groupId}/{userId} ({action}): {(int)resp.StatusCode}");
+            return resp.IsSuccessStatusCode;
+        }
+        catch (Exception ex) { Log($"RespondGroupJoinRequest exception: {ex.Message}"); return false; }
+    }
+
+    /// <summary>Finds the grp_xxx groupId for a group by its shortCode among the current user's groups.</summary>
+    public async Task<string?> FindGroupIdByShortCodeAsync(string shortCode)
+    {
+        var groups = await GetUserGroupsAsync();
+        var match = groups.Cast<JObject>()
+            .FirstOrDefault(g => string.Equals(g["shortCode"]?.ToString(), shortCode, StringComparison.OrdinalIgnoreCase));
+        // membership objects have "groupId" (grp_xxx); "id" is the membership id (gmem_xxx)
+        var gid = match?["groupId"]?.ToString();
+        if (string.IsNullOrEmpty(gid)) gid = match?["id"]?.ToString();
+        return gid?.StartsWith("grp_") == true ? gid : null;
     }
 
     public async Task<bool> MarkNotificationReadAsync(string notifId)
