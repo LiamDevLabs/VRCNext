@@ -139,7 +139,7 @@ function handleTimelineEvent(ev) {
 
 function setTlFilter(f) {
     tlFilter = f;
-    document.querySelectorAll('#tlPersonalFilters .avatar-filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#tlPersonalFilters .sub-tab-btn').forEach(b => b.classList.remove('active'));
     const btn = document.getElementById(TL_FILTER_IDS[f]);
     if (btn) btn.classList.add('active');
     filterTimeline();
@@ -606,7 +606,7 @@ function navigateToTlEvent(id) {
     // would consume _tlScrollTarget before the tab has rendered its cards)
     tlFilter = 'all';
     tlMode = 'personal';
-    document.querySelectorAll('#tlPersonalFilters .avatar-filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#tlPersonalFilters .sub-tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tlModePersonal')?.classList.add('active');
     document.getElementById('tlModeFriends')?.classList.remove('active');
     const pf = document.getElementById('tlPersonalFilters');
@@ -635,14 +635,8 @@ function renderTlDetailJoin(ev, el) {
     if (players.length > 0) {
         playersHtml = `<div class="tl-detail-sect">PLAYERS IN INSTANCE (${players.length})</div><div class="photo-players-list">`;
         players.forEach(p => {
-            const fr    = vrcFriendsData.find(f => f.id === p.userId);
-            const img   = fr?.image || p.image || '';
-            const imgEl = img
-                ? `<div class="inst-user-av" style="background-image:url('${cssUrl(img)}')"></div>`
-                : `<div class="inst-user-av inst-user-av-letter">${esc((p.displayName || '?')[0].toUpperCase())}</div>`;
-            const click  = p.userId ? ` onclick="document.getElementById('modalDetail').style.display='none';openFriendDetail('${esc(p.userId)}')" style="cursor:pointer;"` : '';
-            const badge  = fr ? '<span style="font-size:9px;color:var(--ok);margin-left:auto;">Friend</span>' : '';
-            playersHtml += `<div class="inst-user-row"${click}>${imgEl}<span class="inst-user-name">${esc(p.displayName)}</span>${badge}</div>`;
+            const onclick = p.userId ? `document.getElementById('modalDetail').style.display='none';openFriendDetail('${jsq(p.userId)}')` : '';
+            playersHtml += renderProfileItemSmall({ id: p.userId, displayName: p.displayName, image: p.image }, onclick);
         });
         playersHtml += '</div>';
     }
@@ -681,14 +675,8 @@ function renderTlDetailPhoto(ev, el) {
     if (players.length > 0) {
         playersHtml = `<div class="tl-detail-sect">PLAYERS IN INSTANCE (${players.length})</div><div class="photo-players-list">`;
         players.forEach(p => {
-            const fr    = vrcFriendsData.find(f => f.id === p.userId);
-            const img   = fr?.image || p.image || '';
-            const imgEl = img
-                ? `<div class="inst-user-av" style="background-image:url('${cssUrl(img)}')"></div>`
-                : `<div class="inst-user-av inst-user-av-letter">${esc((p.displayName || '?')[0].toUpperCase())}</div>`;
-            const click = p.userId ? ` onclick="document.getElementById('modalDetail').style.display='none';openFriendDetail('${esc(p.userId)}')" style="cursor:pointer;"` : '';
-            const badge = fr ? '<span style="font-size:9px;color:var(--ok);margin-left:auto;">Friend</span>' : '';
-            playersHtml += `<div class="inst-user-row"${click}>${imgEl}<span class="inst-user-name">${esc(p.displayName)}</span>${badge}</div>`;
+            const onclick = p.userId ? `document.getElementById('modalDetail').style.display='none';openFriendDetail('${jsq(p.userId)}')` : '';
+            playersHtml += renderProfileItemSmall({ id: p.userId, displayName: p.displayName, image: p.image }, onclick);
         });
         playersHtml += '</div>';
     }
@@ -891,7 +879,7 @@ function handleFriendTimelineEvent(ev) {
 
 function setFtFilter(f) {
     ftFilter = f;
-    document.querySelectorAll('#tlFriendsFilters .avatar-filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#tlFriendsFilters .sub-tab-btn').forEach(b => b.classList.remove('active'));
     const btn = document.getElementById(FT_FILTER_IDS[f]);
     if (btn) btn.classList.add('active');
     // Reset pagination and reload from server with new type filter
@@ -1216,17 +1204,11 @@ function renderFtGpsDetailModal(ev) {
         alsoHtml = '<div style="font-size:12px;color:var(--tx3);padding:12px 0;">No other friends tracked in this instance.</div>';
     } else {
         alsoHtml = alsoList.map(e => {
-            const img = e.friendImage
-                ? `<img class="wd-friend-avatar" src="${e.friendImage}" onerror="this.style.display='none'">`
-                : `<div class="wd-friend-avatar" style="display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--tx3);">${esc((e.friendName||'?')[0])}</div>`;
             const { timeStr: fTime } = ftDetailDatetime(e);
-            return `<div class="wd-friend-row" style="cursor:pointer;" onclick="closeFtGpsDetail();openFriendDetail('${jsq(e.friendId)}')">
-                ${img}
-                <div class="wd-friend-info">
-                    <div class="wd-friend-name">${esc(e.friendName || 'Unknown')}</div>
-                    ${fTime ? `<div class="wd-friend-status">${esc(fTime)}</div>` : ''}
-                </div>
-            </div>`;
+            return renderProfileItemSmall(
+                { id: e.friendId, displayName: e.friendName || 'Unknown', image: e.friendImage, subtitle: fTime || '' },
+                `closeFtGpsDetail();openFriendDetail('${jsq(e.friendId)}')`
+            );
         }).join('');
     }
 

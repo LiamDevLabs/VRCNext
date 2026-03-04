@@ -388,19 +388,40 @@ function renderVrcFriends(friends, counts) {
         return `<div class="vrc-friend-card" onclick="openFriendDetail('${fid}')">${imgTag}<div class="vrc-friend-info"><div class="vrc-friend-name" style="display:flex;align-items:center;gap:5px;"><span class="${dotClass} ${statusCls}" style="width:6px;height:6px;flex-shrink:0;"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(f.displayName)}</span>${rankBadge}</div><div class="vrc-friend-loc">${esc(f.statusDescription || statusLabel(f.status))} · ${esc(loc)}</div></div></div>`;
     }
 
+    // Favorites section — all favorited friends (any presence), sorted game > web > offline
+    const favIds = new Set(favFriendsData.map(f => f.favoriteId));
+    const favFriends = favIds.size > 0 ? [...friends].filter(f => favIds.has(f.id)).sort((a, b) => {
+        const o = { game: 0, web: 1, offline: 2 };
+        return (o[a.presence] ?? 2) - (o[b.presence] ?? 2);
+    }) : [];
+    if (favFriends.length > 0) {
+        const favChev = friendSectionCollapsed.favorites ? 'expand_more' : 'expand_less';
+        h += `<div class="vrc-section-label vrc-offline-toggle" onclick="toggleFriendSection('favorites')" style="cursor:pointer;">FAVORITES — ${favFriends.length} <span class="msi" style="font-size:14px;vertical-align:middle;" id="favoritesChevron">${favChev}</span></div>`;
+        h += `<div id="favoritesFriendsSection" style="display:${friendSectionCollapsed.favorites ? 'none' : ''};">`;
+        favFriends.forEach(f => { h += renderCard(f, f.presence); });
+        h += `</div>`;
+    }
+
     if (gameFriends.length > 0) {
-        h += `<div class="vrc-section-label">IN-GAME — ${gc}</div>`;
+        const ingameChev = friendSectionCollapsed.ingame ? 'expand_more' : 'expand_less';
+        h += `<div class="vrc-section-label vrc-offline-toggle" onclick="toggleFriendSection('ingame')" style="cursor:pointer;">IN-GAME — ${gc} <span class="msi" style="font-size:14px;vertical-align:middle;" id="ingameChevron">${ingameChev}</span></div>`;
+        h += `<div id="ingameFriendsSection" style="display:${friendSectionCollapsed.ingame ? 'none' : ''};">`;
         gameFriends.forEach(f => { h += renderCard(f, 'game'); });
+        h += `</div>`;
     }
 
     if (webFriends.length > 0) {
-        h += `<div class="vrc-section-label">WEB / ACTIVE — ${wc}</div>`;
+        const webChev = friendSectionCollapsed.web ? 'expand_more' : 'expand_less';
+        h += `<div class="vrc-section-label vrc-offline-toggle" onclick="toggleFriendSection('web')" style="cursor:pointer;">WEB / ACTIVE — ${wc} <span class="msi" style="font-size:14px;vertical-align:middle;" id="webChevron">${webChev}</span></div>`;
+        h += `<div id="webFriendsSection" style="display:${friendSectionCollapsed.web ? 'none' : ''};">`;
         webFriends.forEach(f => { h += renderCard(f, 'web'); });
+        h += `</div>`;
     }
 
     if (offlineFriends.length > 0) {
-        h += `<div class="vrc-section-label vrc-offline-toggle" onclick="toggleOfflineFriends()" style="cursor:pointer;">OFFLINE — ${oc} <span class="msi" style="font-size:14px;vertical-align:middle;" id="offlineChevron">expand_more</span></div>`;
-        h += `<div id="offlineFriendsSection" style="display:none;">`;
+        const offlineChev = friendSectionCollapsed.offline ? 'expand_more' : 'expand_less';
+        h += `<div class="vrc-section-label vrc-offline-toggle" onclick="toggleFriendSection('offline')" style="cursor:pointer;">OFFLINE — ${oc} <span class="msi" style="font-size:14px;vertical-align:middle;" id="offlineChevron">${offlineChev}</span></div>`;
+        h += `<div id="offlineFriendsSection" style="display:${friendSectionCollapsed.offline ? 'none' : ''};">`;
         offlineFriends.forEach(f => { h += renderCard(f, 'offline'); });
         h += `</div>`;
     }
@@ -414,17 +435,15 @@ function renderVrcFriends(friends, counts) {
     requestInstanceInfo();
 }
 
-function toggleOfflineFriends() {
-    const sec = document.getElementById('offlineFriendsSection');
-    const chev = document.getElementById('offlineChevron');
-    if (!sec) return;
-    if (sec.style.display === 'none') {
-        sec.style.display = '';
-        if (chev) chev.textContent = 'expand_less';
-    } else {
-        sec.style.display = 'none';
-        if (chev) chev.textContent = 'expand_more';
-    }
+function toggleFriendSection(key) {
+    friendSectionCollapsed[key] = !friendSectionCollapsed[key];
+    try { localStorage.setItem('friendSectionCollapsed', JSON.stringify(friendSectionCollapsed)); } catch {}
+    const ids = { favorites: ['favoritesFriendsSection', 'favoritesChevron'], ingame: ['ingameFriendsSection', 'ingameChevron'], web: ['webFriendsSection', 'webChevron'], offline: ['offlineFriendsSection', 'offlineChevron'] };
+    const [secId, chevId] = ids[key] || [];
+    const sec = secId && document.getElementById(secId);
+    const chev = chevId && document.getElementById(chevId);
+    if (sec) sec.style.display = friendSectionCollapsed[key] ? 'none' : '';
+    if (chev) chev.textContent = friendSectionCollapsed[key] ? 'expand_more' : 'expand_less';
 }
 
 function filterFriendsList() {
@@ -432,16 +451,24 @@ function filterFriendsList() {
     const cards = document.querySelectorAll('#vrcFriendsList .vrc-friend-card');
     const sections = document.querySelectorAll('#vrcFriendsList .vrc-section-label');
 
+    // Hide favorites section during search to avoid duplicates
+    const favSec  = document.getElementById('favoritesFriendsSection');
+    const favLabel = favSec?.previousElementSibling;
+
     if (!q) {
-        // Reset: show all, restore offline collapsed state
+        // Reset: show all, restore collapsed states
         cards.forEach(c => c.style.display = '');
         sections.forEach(s => s.style.display = '');
         const offSec = document.getElementById('offlineFriendsSection');
-        if (offSec) offSec.style.display = 'none';
-        const chev = document.getElementById('offlineChevron');
-        if (chev) chev.textContent = 'expand_more';
+        if (offSec) offSec.style.display = friendSectionCollapsed.offline ? 'none' : '';
+        if (favSec)   favSec.style.display   = friendSectionCollapsed.favorites ? 'none' : '';
+        if (favLabel) favLabel.style.display  = '';
         return;
     }
+
+    // Hide favorites section while searching (prevents duplicates)
+    if (favSec)   favSec.style.display   = 'none';
+    if (favLabel) favLabel.style.display  = 'none';
 
     // Show offline section while searching
     const offSec = document.getElementById('offlineFriendsSection');
@@ -454,15 +481,13 @@ function filterFriendsList() {
 
     // Hide section labels if all their cards are hidden
     sections.forEach(s => {
-        let next = s.nextElementSibling;
-        // For offline, the next is the wrapper div
-        if (next && next.id === 'offlineFriendsSection') next = next;
+        if (s.style.display === 'none') return; // already hidden (e.g. favorites during search)
         let hasVisible = false;
         let sibling = s.nextElementSibling;
         while (sibling && !sibling.classList.contains('vrc-section-label')) {
             if (sibling.classList.contains('vrc-friend-card') && sibling.style.display !== 'none') hasVisible = true;
-            // Check inside offline wrapper
-            if (sibling.id === 'offlineFriendsSection') {
+            // Check inside any section wrapper div
+            if (sibling.id && sibling.id.endsWith('FriendsSection')) {
                 sibling.querySelectorAll('.vrc-friend-card').forEach(c => {
                     if (c.style.display !== 'none') hasVisible = true;
                 });
@@ -506,13 +531,15 @@ function submitStatusChange() {
 
 // Profile helpers
 function formatDuration(totalSec) {
-    if (totalSec < 60) return `${totalSec}s`;
-    const h = Math.floor(totalSec / 3600);
+    if (totalSec < 1) return '0s';
+    const d = Math.floor(totalSec / 86400);
+    const h = Math.floor((totalSec % 86400) / 3600);
     const m = Math.floor((totalSec % 3600) / 60);
     const s = totalSec % 60;
-    if (h >= 24) { const d = Math.floor(h/24); const rh = h%24; return rh > 0 ? `${d}d ${rh}h` : `${d}d`; }
+    if (d > 0) return `${d}d ${h}h ${m}m ${s}s`;
     if (h > 0) return `${h}h ${m}m ${s}s`;
-    return `${m}m ${s}s`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
 }
 
 function formatLastSeen(apiLastLogin, localLastSeen) {
@@ -712,12 +739,16 @@ function renderFriendDetail(d) {
 
     let worldHtml = '';
     if (d.worldName) {
-        const thumbTag = d.worldThumb ? `<img class="fd-world-thumb" src="${d.worldThumb}" onerror="this.style.display='none'">` : '';
-        const { cls: instClass, label: instLabel } = getInstanceBadge(d.instanceType);
-        const users = d.userCount > 0 ? (d.worldCapacity > 0 ? `${d.userCount}/${d.worldCapacity}` : d.userCount + ' users') : '';
         const { worldId: fdWorldId } = parseFriendLocation(d.location);
-        const clickAttr = fdWorldId ? ` onclick="closeFriendDetail();openWorldSearchDetail('${esc(fdWorldId)}')" style="cursor:pointer;"` : '';
-        worldHtml = `<div class="fd-world-card"${clickAttr}>${thumbTag}<div class="fd-world-info"><div class="fd-world-name">${esc(d.worldName)}</div><div class="fd-world-meta">${users ? esc(users) : ''}</div><span class="fd-instance-badge ${instClass}">${instLabel}</span></div></div>`;
+        const onclick = fdWorldId ? `closeFriendDetail();openWorldSearchDetail('${esc(fdWorldId)}')` : '';
+        worldHtml = `<div style="margin-bottom:14px;"><div class="fd-group-rep-label">Current World</div>` + renderInstanceItem({
+            thumb:        d.worldThumb || '',
+            worldName:    d.worldName,
+            instanceType: d.instanceType,
+            userCount:    d.userCount || 0,
+            capacity:     d.worldCapacity || 0,
+            onclick,
+        }) + `</div>`;
     } else if (d.location === 'private') {
         worldHtml = `<div style="padding:12px;background:var(--bg-input);border-radius:10px;margin-bottom:14px;font-size:12px;color:var(--tx3);text-align:center;">Private Instance</div>`;
     } else if (d.location === 'traveling') {
@@ -866,17 +897,7 @@ function renderFriendDetail(d) {
         </div>`;
     } else {
         allMutuals.forEach(mu => {
-            const muImg = mu.image
-                ? `<img class="fd-mutual-avatar" src="${esc(mu.image)}" onerror="this.outerHTML='<div class=\\'fd-mutual-avatar\\' style=\\'display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--tx3)\\'>${esc((mu.displayName||'?')[0])}</div>'">`
-                : `<div class="fd-mutual-avatar" style="display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--tx3)">${esc((mu.displayName||'?')[0])}</div>`;
-            const muUid = jsq(mu.id || '');
-            // Cross-reference vrcFriendsData because the mutuals endpoint doesn't expose location reliably
-            const _muFriend = vrcFriendsData.find(f => f.id === mu.id);
-            const _muPresence = _muFriend ? _muFriend.presence : (mu.presence || 'offline');
-            const muIndicator = _muPresence === 'web' ? 'vrc-status-ring' : 'vrc-status-dot';
-            mutualsContent += `<div class="fd-mutual-card" onclick="closeFriendDetail();openFriendDetail('${muUid}')">
-                ${muImg}<div class="fd-mutual-info"><div class="fd-mutual-name">${esc(mu.displayName)}</div><div class="fd-mutual-status"><span class="${muIndicator} ${statusDotClass(mu.status)}" style="width:6px;height:6px;flex-shrink:0;"></span>${statusLabel(mu.status)}${mu.statusDescription ? ' — ' + esc(mu.statusDescription) : ''}</div></div>
-            </div>`;
+            mutualsContent += renderProfileItem(mu, `closeFriendDetail();openFriendDetail('${jsq(mu.id)}')`);
         });
     }
 
@@ -998,6 +1019,8 @@ function handleFavFriendToggled(payload) {
     }
     // Refresh favorites grid if visible
     filterFavFriends();
+    // Refresh sidebar so FAVORITES section updates immediately
+    renderVrcFriends(vrcFriendsData);
 }
 
 // People Tab: Favorites / Search / Blocked / Muted

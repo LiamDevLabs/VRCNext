@@ -42,7 +42,8 @@
       "Bash(cmd /c \"dir /s /b \"\"%LOCALAPPDATA%\\\\*ISCC*\"\" 2>nul & dir /s /b \"\"%APPDATA%\\\\*ISCC*\"\" 2>nul & dir /s /b \"\"C:\\\\Users\\\\Johns\\\\*ISCC*\"\" /s 2>nul | head -5\")",
       "Bash(cmd /c \"winget list \"\"Inno Setup\"\" 2>nul\")",
       "Bash(grep -r \"formatDuration\" /c/Users/Johns/Documents/GitHub/VRCNext/wwwroot/JavaScript/*.js)",
-      "Bash(grep -n \"Players in instance\\\\|players.*instance\\\\|instance.*player\\\\|Spieler\\\\|n_users\\\\|userCount\\\\|nUsers\\\\|instancePlayers\\\\|currentInstance\\\\|renderCurrentInstance\\\\|requestInstanceInfo\" wwwroot/JavaScript/*.js)"
+      "Bash(grep -n \"Players in instance\\\\|players.*instance\\\\|instance.*player\\\\|Spieler\\\\|n_users\\\\|userCount\\\\|nUsers\\\\|instancePlayers\\\\|currentInstance\\\\|renderCurrentInstance\\\\|requestInstanceInfo\" wwwroot/JavaScript/*.js)",
+      "Bash(grep -A 8 \"^\\\\.input-row input\\\\\\\\[type\" \"c:\\\\Users\\\\Johns\\\\Documents\\\\GitHub\\\\VRCNext\\\\wwwroot\\\\Styles\\\\styles.css\")"
     ]
   }
 }

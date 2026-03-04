@@ -85,8 +85,8 @@ function renderInviteList(filter) {
         const sel = _inviteSelected.has(f.id);
         const hasImg = f.image && f.image.length > 5;
         const av = hasImg
-            ? `<img class="fd-mutual-avatar" src="${esc(f.image)}" onerror="this.outerHTML='<div class=\\'fd-mutual-avatar\\' style=\\'display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--tx3)\\'>${esc((f.displayName||'?')[0])}</div>'">`
-            : `<div class="fd-mutual-avatar" style="display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--tx3)">${esc((f.displayName||'?')[0])}</div>`;
+            ? `<img class="fd-profile-item-avatar" src="${esc(f.image)}" onerror="this.outerHTML='<div class=\\'fd-profile-item-avatar\\' style=\\'display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--tx3)\\'>${esc((f.displayName||'?')[0])}</div>'">`
+            : `<div class="fd-profile-item-avatar" style="display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--tx3)">${esc((f.displayName||'?')[0])}</div>`;
         const isWeb = f.presence === 'web';
         const loc = isWeb ? 'Web / Mobile' : (f.statusDescription || statusLabel(f.status || 'offline'));
         const indicatorClass = isWeb ? 'vrc-status-ring' : 'vrc-status-dot';
@@ -97,9 +97,9 @@ function renderInviteList(filter) {
                 ${sel ? '<span class="msi" style="font-size:13px;line-height:1;">check</span>' : ''}
             </div>
             ${av}
-            <div class="fd-mutual-info">
-                <div class="fd-mutual-name">${esc(f.displayName)}</div>
-                <div class="fd-mutual-status"><span class="${indicatorClass} ${statusCls}" style="width:6px;height:6px;flex-shrink:0;"></span>${esc(loc)}</div>
+            <div class="fd-profile-item-info">
+                <div class="fd-profile-item-name">${esc(f.displayName)}</div>
+                <div class="fd-profile-item-status"><span class="${indicatorClass} ${statusCls}" style="width:6px;height:6px;flex-shrink:0;"></span>${esc(loc)}</div>
             </div>
         </div>`;
     }

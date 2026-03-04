@@ -67,21 +67,19 @@ function tsRender() {
 
 /* ── Helpers ── */
 function tsFmtTime(seconds) {
-    if (seconds <= 0) return '< 1 min';
-    const h = Math.floor(seconds / 3600);
+    if (seconds < 1) return '0s';
+    const d = Math.floor(seconds / 86400);
+    const h = Math.floor((seconds % 86400) / 3600);
     const m = Math.floor((seconds % 3600) / 60);
-    if (h === 0) return `${m}m`;
-    if (m === 0) return `${h}h`;
-    return `${h}h ${m}m`;
+    const s = seconds % 60;
+    if (d > 0) return `${d}d ${h}h ${m}m ${s}s`;
+    if (h > 0) return `${h}h ${m}m ${s}s`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
 }
 
 function tsFmtTimeLong(seconds) {
-    if (seconds <= 0) return 'Less than a minute';
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    if (h === 0) return `${m} min`;
-    if (m === 0) return `${h} hr`;
-    return `${h} hr ${m} min`;
+    return tsFmtTime(seconds);
 }
 
 /* ── Worlds ── */

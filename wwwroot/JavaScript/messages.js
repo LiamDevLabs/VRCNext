@@ -133,6 +133,10 @@ if (window.chrome?.webview) {
                     }
                 } else {
                     showToast(payload.success, payload.message);
+                    // Auto-refresh groups list on join/leave (from anywhere in the app)
+                    if (payload.success && (payload.action === 'joinGroup' || payload.action === 'leaveGroup')) {
+                        loadMyGroups();
+                    }
                     // Re-enable friend action buttons if open
                     if (!['createGroupPost', 'acceptNotif', 'join'].includes(payload.action)) {
                         const fdActions = document.querySelector('#friendDetailContent .fd-actions');

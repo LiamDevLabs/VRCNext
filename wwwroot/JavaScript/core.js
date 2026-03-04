@@ -17,6 +17,11 @@ let sidebarCollapsed = localStorage.getItem('vrcnext_sidebar') === '1';
 let dashBgPath = '', dashBgDataUri = '', dashOpacity = 40;
 let dashWorldCache = {};
 let vrcFriendsLoaded = false;
+const _fscDefaults = { favorites: false, ingame: false, web: false, offline: true };
+let friendSectionCollapsed = (() => {
+    try { return Object.assign({}, _fscDefaults, JSON.parse(localStorage.getItem('friendSectionCollapsed') || '{}')); }
+    catch { return { ..._fscDefaults }; }
+})();
 let avatarsData = [], avatarFavData = [], avatarFilter = 'own', avatarsLoaded = false, currentAvatarId = '';
 let avatarSearchResults = [], avatarSearchPage = 0, avatarSearchQuery = '', avatarSearchHasMore = false;
 let favAvatarsData = [], favAvatarGroups = [], favAvatarGroupFilter = '';

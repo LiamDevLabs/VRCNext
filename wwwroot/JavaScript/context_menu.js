@@ -228,7 +228,7 @@
             if (id) return buildWorldItems(id);
         }
 
-        const friendCard = el.closest('.vrc-friend-card, .fd-mutual-card, .wd-friend-row, .inst-user-row');
+        const friendCard = el.closest('.vrc-friend-card, .fd-profile-item, .wd-friend-row, .inst-user-row');
         if (friendCard) {
             const id = extractId(friendCard, /openFriendDetail\('([^']+)'\)/);
             if (id) return buildFriendItems(id);

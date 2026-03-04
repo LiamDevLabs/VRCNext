@@ -22,6 +22,13 @@ function setWorldFilter(filter) {
     }
 }
 
+function _wdGroupOptionLabel(g) {
+    const count = favWorldsData.filter(w => w.favoriteGroup === g.name).length;
+    const cap   = g.capacity || 32;
+    const isVrcPlus = g.type === 'vrcPlusWorld';
+    return `${esc(g.displayName || g.name)} ${count}/${cap}${isVrcPlus ? ' [VRC+]' : ''}`;
+}
+
 function renderFavWorlds(payload) {
     // Reset refresh button if it was spinning
     const refreshBtn = document.getElementById('favWorldsRefreshBtn');
@@ -40,7 +47,7 @@ function renderFavWorlds(payload) {
     if (sel) {
         const prev = favWorldGroupFilter;
         sel.innerHTML = '<option value="">All Favorites</option>' +
-            groups.map(g => `<option value="${esc(g.name)}">${esc(g.displayName || g.name)}</option>`).join('');
+            groups.map(g => `<option value="${esc(g.name)}">${_wdGroupOptionLabel(g)}</option>`).join('');
         const stillValid = groups.some(g => g.name === prev);
         favWorldGroupFilter = stillValid ? prev : '';
         sel.value = favWorldGroupFilter;
@@ -112,7 +119,7 @@ function onFavoriteGroupUpdated(data) {
     const sel = document.getElementById('favWorldGroupFilter');
     if (sel) {
         const opt = [...sel.options].find(o => o.value === data.groupName);
-        if (opt) opt.textContent = data.displayName;
+        if (opt && g) opt.textContent = _wdGroupOptionLabel(g);
     }
     cancelEditWorldGroupName();
     updateFavWorldGroupHeader();
@@ -217,32 +224,18 @@ function renderWorldSearchDetail(w) {
     if (allInstances.length > 0) {
         instancesHtml = `<div class="wd-section-label" style="margin-top:4px;">ACTIVE INSTANCES (${allInstances.length})</div><div class="wd-instances-list">`;
         allInstances.forEach(inst => {
-            const { cls: tClass, label: tLabel } = getInstanceBadge(inst.type);
-            const rLabel = regionLabels[inst.region] || inst.region.toUpperCase();
-            const loc = (inst.location || '').replace(/'/g, "\\'");
-            const instFriends = worldFriendsByLoc[inst.location] || [];
-            let friendsStrip = '';
-            if (instFriends.length > 0) {
-                const MAX_AV = 3;
-                const avatars = instFriends.slice(0, MAX_AV).map(f => {
-                    const img = f.image || '';
-                    return img
-                        ? `<img class="inst-av-sm" src="${img}" title="${esc(f.displayName)}" onerror="this.style.display='none'">`
-                        : `<div class="inst-av-sm inst-av-sm-letter" title="${esc(f.displayName)}">${esc((f.displayName||'?')[0])}</div>`;
-                }).join('');
-                const extra = instFriends.length > MAX_AV ? `<span class="inst-av-extra">+${instFriends.length - MAX_AV}</span>` : '';
-                friendsStrip = `<div class="inst-friends-strip">${avatars}${extra}</div>`;
-            }
-            const canJoin = inst.type !== 'private';
-            instancesHtml += `<div class="wd-instance-row">
-                <div class="wd-instance-info">
-                    <span class="fd-instance-badge ${tClass}" style="font-size:10px;">${tLabel}</span>
-                    <span style="font-size:11px;color:var(--tx2);">${rLabel}</span>
-                    <span style="font-size:11px;color:var(--tx3);display:inline-flex;align-items:center;gap:2px;"><span class="msi" style="font-size:12px;">person</span> ${inst.users}${w.capacity ? '/' + w.capacity : ''}</span>
-                </div>
-                ${friendsStrip}
-                ${canJoin ? `<button class="btn-f" onclick="sendToCS({action:'vrcJoinFriend',location:'${loc}'});this.disabled=true;this.textContent='Joining...';" style="padding:3px 10px;font-size:10px;"><span class="msi" style="font-size:14px;">login</span> Join</button>` : ''}
-            </div>`;
+            instancesHtml += renderInstanceItem({
+                instanceType: inst.type,
+                instanceId:   inst.instanceId || '',
+                owner:        inst.ownerName  || '',
+                ownerGroup:   inst.ownerGroup || '',
+                ownerId:      inst.ownerId    || '',
+                region:       regionLabels[inst.region] || inst.region.toUpperCase(),
+                userCount:    inst.users,
+                capacity:     w.capacity || 0,
+                friends:      worldFriendsByLoc[inst.location] || [],
+                location:     inst.location,
+            });
         });
         instancesHtml += '</div>';
     } else {
@@ -597,18 +590,7 @@ function openWorldDetail(worldId) {
         }
         friendsHtml += '<div class="wd-friends-list">';
         inst.friends.forEach(f => {
-            const img = f.image || '';
-            const imgTag = img
-                ? `<img class="wd-friend-avatar" src="${img}" onerror="this.style.display='none'">`
-                : `<div class="wd-friend-avatar" style="display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--tx3)">${esc((f.displayName||'?')[0])}</div>`;
-            const fid = (f.id || '').replace(/'/g, "\\'");
-            friendsHtml += `<div class="wd-friend-row" onclick="closeWorldDetail();openFriendDetail('${fid}')">
-                ${imgTag}
-                <div class="wd-friend-info">
-                    <div class="wd-friend-name"><span class="vrc-status-dot ${statusDotClass(f.status)}" style="width:7px;height:7px;"></span>${esc(f.displayName)}</div>
-                    <div class="wd-friend-status">${esc(f.statusDescription || statusLabel(f.status))}</div>
-                </div>
-            </div>`;
+            friendsHtml += renderProfileItem(f, `closeWorldDetail();openFriendDetail('${jsq(f.id || '')}')`);
         });
         friendsHtml += '</div>';
     });

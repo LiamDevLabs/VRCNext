@@ -30,7 +30,7 @@ function refreshFavAvatars() {
 
 function setAvatarFilter(filter) {
     avatarFilter = filter;
-    document.querySelectorAll('.avatar-filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
     const btnMap = { own: 'avatarFilterOwn', favorites: 'avatarFilterFav', rose: 'avatarFilterRose', search: 'avatarFilterSearch' };
     const btn = document.getElementById(btnMap[filter]);
     if (btn) btn.classList.add('active');

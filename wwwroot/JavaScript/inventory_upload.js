@@ -108,7 +108,7 @@ function _iuBuildHTML(tab) {
         <div id="iuEmojiOptions" style="display:none;margin-top:14px;">
             <div style="font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:8px;">Particle style</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;" id="iuAnimBtns">
-                ${IU_ANIM_STYLES.map(s => `<button class="btn-fav avatar-filter-btn${s.value === 'aura' ? ' active' : ''}" onclick="iuSetAnimStyle('${s.value}',this)">${esc(s.label)}</button>`).join('')}
+                ${IU_ANIM_STYLES.map(s => `<button class="btn-fav sub-tab-btn${s.value === 'aura' ? ' active' : ''}" onclick="iuSetAnimStyle('${s.value}',this)">${esc(s.label)}</button>`).join('')}
             </div>
         </div>` : '';
 

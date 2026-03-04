@@ -320,14 +320,8 @@ function openPhotoDetail(idx) {
     if (players.length > 0) {
         playersHtml = `<div style="font-size:10px;font-weight:700;color:var(--tx3);padding:8px 0 4px;letter-spacing:.05em;">PLAYERS IN INSTANCE (${players.length})</div><div class="photo-players-list">`;
         players.forEach(p => {
-            const fr = vrcFriendsData.find(f => f.id === p.userId);
-            const img = fr?.image || p.image || '';
-            const imgTag = img
-                ? `<div class="inst-user-av" style="background-image:url('${cssUrl(img)}')"></div>`
-                : `<div class="inst-user-av inst-user-av-letter">${esc((p.displayName||'?')[0].toUpperCase())}</div>`;
-            const click = p.userId ? ` onclick="document.getElementById('modalDetail').style.display='none';openFriendDetail('${esc(p.userId)}')"` : '';
-            const isFriend = fr ? '<span style="font-size:9px;color:var(--ok);margin-left:auto;">Friend</span>' : '';
-            playersHtml += `<div class="inst-user-row"${click}>${imgTag}<span class="inst-user-name">${esc(p.displayName)}</span>${isFriend}</div>`;
+            const onclick = p.userId ? `document.getElementById('modalDetail').style.display='none';openFriendDetail('${jsq(p.userId)}')` : '';
+            playersHtml += renderProfileItemSmall({ id: p.userId, displayName: p.displayName, image: p.image }, onclick);
         });
         playersHtml += `</div>`;
     }

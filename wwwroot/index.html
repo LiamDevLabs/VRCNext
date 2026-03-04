@@ -96,8 +96,8 @@
             <div class="tab" id="tab1">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
                     <div style="display:flex;gap:8px;align-items:center;">
-                        <button class="btn-fav avatar-filter-btn active" id="worldFilterFav" onclick="setWorldFilter('favorites')"><span class="msi" style="font-size:16px;">star</span> Favorites</button>
-                        <button class="btn-fav avatar-filter-btn" id="worldFilterSearch" onclick="setWorldFilter('search')"><span class="msi" style="font-size:16px;">search</span> Search</button>
+                        <button class="btn-fav sub-tab-btn active" id="worldFilterFav" onclick="setWorldFilter('favorites')"><span class="msi" style="font-size:16px;">star</span> Favorites</button>
+                        <button class="btn-fav sub-tab-btn" id="worldFilterSearch" onclick="setWorldFilter('search')"><span class="msi" style="font-size:16px;">search</span> Search</button>
                     </div>
                 </div>
                 <div id="worldSearchArea" style="display:none;">
@@ -129,7 +129,7 @@
             </div>
             <!-- Tab 2: Groups -->
             <div class="tab" id="tab2">
-                <div class="search-bar-row"><span class="msi search-ico">search</span><input type="text" id="searchGroupsInput" class="search-input" placeholder="Search groups..." onkeydown="if(event.key==='Enter')doSearch('groups')"><button class="btn-f" onclick="doSearch('groups')">Search</button></div>
+                <div class="search-bar-row"><span class="msi search-ico">search</span><input type="text" id="searchGroupsInput" class="search-input" placeholder="Search groups..." onkeydown="if(event.key==='Enter')doSearch('groups')"><button class="btn-f" onclick="doSearch('groups')">Search</button><button id="groupsRefreshBtn" class="btn-f" onclick="refreshGroups()" title="Refresh my groups"><span class="msi" style="font-size:16px;">refresh</span> Refresh</button></div>
                 <div class="dash-section-label" id="myGroupsLabel" style="display:none;">MY GROUPS</div>
                 <div id="myGroupsGrid" class="search-grid"></div>
                 <div class="dash-section-label" id="searchGroupsLabel" style="display:none;">SEARCH RESULTS</div>
@@ -138,10 +138,10 @@
             <!-- Tab 3: People (Favorites + Search + Blocked + Muted) -->
             <div class="tab" id="tab3">
                 <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
-                    <button class="btn-fav avatar-filter-btn active" id="peopleFilterFav" onclick="setPeopleFilter('favorites')"><span class="msi" style="font-size:16px;">star</span> Favorites</button>
-                    <button class="btn-fav avatar-filter-btn" id="peopleFilterSearch" onclick="setPeopleFilter('search')"><span class="msi" style="font-size:16px;">search</span> Search</button>
-                    <button class="btn-fav avatar-filter-btn" id="peopleFilterBlocked" onclick="setPeopleFilter('blocked')"><span class="msi" style="font-size:16px;">block</span> Blocked</button>
-                    <button class="btn-fav avatar-filter-btn" id="peopleFilterMuted" onclick="setPeopleFilter('muted')"><span class="msi" style="font-size:16px;">volume_off</span> Muted</button>
+                    <button class="btn-fav sub-tab-btn active" id="peopleFilterFav" onclick="setPeopleFilter('favorites')"><span class="msi" style="font-size:16px;">star</span> Favorites</button>
+                    <button class="btn-fav sub-tab-btn" id="peopleFilterSearch" onclick="setPeopleFilter('search')"><span class="msi" style="font-size:16px;">search</span> Search</button>
+                    <button class="btn-fav sub-tab-btn" id="peopleFilterBlocked" onclick="setPeopleFilter('blocked')"><span class="msi" style="font-size:16px;">block</span> Blocked</button>
+                    <button class="btn-fav sub-tab-btn" id="peopleFilterMuted" onclick="setPeopleFilter('muted')"><span class="msi" style="font-size:16px;">volume_off</span> Muted</button>
                     <button class="btn-f" id="peopleRefreshBtn" onclick="refreshPeopleTab()" title="Refresh" style="margin-left:auto;"><span class="msi" style="font-size:16px;">refresh</span> Refresh</button>
                 </div>
                 <div id="peopleFavArea">
@@ -165,10 +165,10 @@
             <div class="tab" id="tab4">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
                     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                        <button class="btn-fav avatar-filter-btn active" id="avatarFilterOwn" onclick="setAvatarFilter('own')"><span class="msi" style="font-size:16px;">person</span> My Avatars</button>
-                        <button class="btn-fav avatar-filter-btn" id="avatarFilterFav" onclick="setAvatarFilter('favorites')"><span class="msi" style="font-size:16px;">star</span> Favorites</button>
-                        <button class="btn-fav avatar-filter-btn" id="avatarFilterRose" onclick="setAvatarFilter('rose')"><span class="msi" style="font-size:16px;">local_florist</span> Rose Database</button>
-                        <button class="btn-fav avatar-filter-btn" id="avatarFilterSearch" onclick="setAvatarFilter('search')"><span class="msi" style="font-size:16px;">search</span> Search</button>
+                        <button class="btn-fav sub-tab-btn active" id="avatarFilterOwn" onclick="setAvatarFilter('own')"><span class="msi" style="font-size:16px;">person</span> My Avatars</button>
+                        <button class="btn-fav sub-tab-btn" id="avatarFilterFav" onclick="setAvatarFilter('favorites')"><span class="msi" style="font-size:16px;">star</span> Favorites</button>
+                        <button class="btn-fav sub-tab-btn" id="avatarFilterRose" onclick="setAvatarFilter('rose')"><span class="msi" style="font-size:16px;">local_florist</span> Rose Database</button>
+                        <button class="btn-fav sub-tab-btn" id="avatarFilterSearch" onclick="setAvatarFilter('search')"><span class="msi" style="font-size:16px;">search</span> Search</button>
                     </div>
                     <span id="avatarCount" style="font-size:12px;color:var(--tx3);"></span>
                 </div>
@@ -543,8 +543,8 @@
             <!-- Tab 12: Timeline -->
             <div class="tab" id="tab12">
                 <div class="tl-mode-row">
-                    <button class="btn-fav avatar-filter-btn active" id="tlModePersonal" onclick="setTlMode('personal')"><span class="msi" style="font-size:14px;">person</span> Personal</button>
-                    <button class="btn-fav avatar-filter-btn" id="tlModeFriends" onclick="setTlMode('friends')"><span class="msi" style="font-size:14px;">group</span> Friends</button>
+                    <button class="btn-fav sub-tab-btn active" id="tlModePersonal" onclick="setTlMode('personal')"><span class="msi" style="font-size:14px;">person</span> Personal</button>
+                    <button class="btn-fav sub-tab-btn" id="tlModeFriends" onclick="setTlMode('friends')"><span class="msi" style="font-size:14px;">group</span> Friends</button>
                 </div>
                 <div class="tl-topbar">
                     <div class="search-bar-row" style="flex:1;margin-bottom:0;">
@@ -579,21 +579,21 @@
                     </div>
                 </div>
                 <div class="tl-filter-row" id="tlPersonalFilters">
-                    <button class="btn-fav avatar-filter-btn active" id="tlFAll" onclick="setTlFilter('all')">All</button>
-                    <button class="btn-fav avatar-filter-btn" id="tlFJoin" onclick="setTlFilter('instance_join')"><span class="msi" style="font-size:14px;">travel_explore</span> Instances</button>
-                    <button class="btn-fav avatar-filter-btn" id="tlFPhoto" onclick="setTlFilter('photo')"><span class="msi" style="font-size:14px;">camera</span> Photos</button>
-                    <button class="btn-fav avatar-filter-btn" id="tlFMeet" onclick="setTlFilter('first_meet')"><span class="msi" style="font-size:14px;">person_add</span> First Meets</button>
-                    <button class="btn-fav avatar-filter-btn" id="tlFMeetAgain" onclick="setTlFilter('meet_again')"><span class="msi" style="font-size:14px;">person_check</span> Meet Again</button>
-                    <button class="btn-fav avatar-filter-btn" id="tlFNotif" onclick="setTlFilter('notification')"><span class="msi" style="font-size:14px;">notifications</span> Notifications</button>
+                    <button class="btn-fav sub-tab-btn active" id="tlFAll" onclick="setTlFilter('all')">All</button>
+                    <button class="btn-fav sub-tab-btn" id="tlFJoin" onclick="setTlFilter('instance_join')"><span class="msi" style="font-size:14px;">travel_explore</span> Instances</button>
+                    <button class="btn-fav sub-tab-btn" id="tlFPhoto" onclick="setTlFilter('photo')"><span class="msi" style="font-size:14px;">camera</span> Photos</button>
+                    <button class="btn-fav sub-tab-btn" id="tlFMeet" onclick="setTlFilter('first_meet')"><span class="msi" style="font-size:14px;">person_add</span> First Meets</button>
+                    <button class="btn-fav sub-tab-btn" id="tlFMeetAgain" onclick="setTlFilter('meet_again')"><span class="msi" style="font-size:14px;">person_check</span> Meet Again</button>
+                    <button class="btn-fav sub-tab-btn" id="tlFNotif" onclick="setTlFilter('notification')"><span class="msi" style="font-size:14px;">notifications</span> Notifications</button>
                 </div>
                 <div class="tl-filter-row" id="tlFriendsFilters" style="display:none;">
-                    <button class="btn-fav avatar-filter-btn active" id="ftFAll"        onclick="setFtFilter('all')">All</button>
-                    <button class="btn-fav avatar-filter-btn" id="ftFGps"        onclick="setFtFilter('friend_gps')"><span class="msi" style="font-size:14px;">location_on</span> Location</button>
-                    <button class="btn-fav avatar-filter-btn" id="ftFStatus"     onclick="setFtFilter('friend_status')"><span class="msi" style="font-size:14px;">circle</span> Status</button>
-                    <button class="btn-fav avatar-filter-btn" id="ftFStatusDesc" onclick="setFtFilter('friend_statusdesc')"><span class="msi" style="font-size:14px;">chat_bubble_outline</span> Status Text</button>
-                    <button class="btn-fav avatar-filter-btn" id="ftFOnline"     onclick="setFtFilter('friend_online')"><span class="msi" style="font-size:14px;">login</span> Online</button>
-                    <button class="btn-fav avatar-filter-btn" id="ftFOffline"    onclick="setFtFilter('friend_offline')"><span class="msi" style="font-size:14px;">power_settings_new</span> Offline</button>
-                    <button class="btn-fav avatar-filter-btn" id="ftFBio"        onclick="setFtFilter('friend_bio')"><span class="msi" style="font-size:14px;">edit_note</span> Bio</button>
+                    <button class="btn-fav sub-tab-btn active" id="ftFAll"        onclick="setFtFilter('all')">All</button>
+                    <button class="btn-fav sub-tab-btn" id="ftFGps"        onclick="setFtFilter('friend_gps')"><span class="msi" style="font-size:14px;">location_on</span> Location</button>
+                    <button class="btn-fav sub-tab-btn" id="ftFStatus"     onclick="setFtFilter('friend_status')"><span class="msi" style="font-size:14px;">circle</span> Status</button>
+                    <button class="btn-fav sub-tab-btn" id="ftFStatusDesc" onclick="setFtFilter('friend_statusdesc')"><span class="msi" style="font-size:14px;">chat_bubble_outline</span> Status Text</button>
+                    <button class="btn-fav sub-tab-btn" id="ftFOnline"     onclick="setFtFilter('friend_online')"><span class="msi" style="font-size:14px;">login</span> Online</button>
+                    <button class="btn-fav sub-tab-btn" id="ftFOffline"    onclick="setFtFilter('friend_offline')"><span class="msi" style="font-size:14px;">power_settings_new</span> Offline</button>
+                    <button class="btn-fav sub-tab-btn" id="ftFBio"        onclick="setFtFilter('friend_bio')"><span class="msi" style="font-size:14px;">edit_note</span> Bio</button>
                 </div>
                 <div class="tl-container" id="tlContainer">
                     <div class="empty-msg">No timeline events yet. VRChat activity will appear here.</div>
@@ -603,12 +603,12 @@
             <div class="tab" id="tab13">
                 <div class="inv-topbar">
                     <div class="inv-filter-row">
-                        <button class="btn-fav avatar-filter-btn active" id="invFPhotos" onclick="switchInvTab('photos')"><span class="msi" style="font-size:14px;">photo_library</span> Photos</button>
-                        <button class="btn-fav avatar-filter-btn" id="invFIcons" onclick="switchInvTab('icons')"><span class="msi" style="font-size:14px;">account_circle</span> Icons</button>
-                        <button class="btn-fav avatar-filter-btn" id="invFEmojis" onclick="switchInvTab('emojis')"><span class="msi" style="font-size:14px;">emoji_emotions</span> Emojis</button>
-                        <button class="btn-fav avatar-filter-btn" id="invFStickers" onclick="switchInvTab('stickers')"><span class="msi" style="font-size:14px;">sticky_note_2</span> Stickers</button>
-                        <button class="btn-fav avatar-filter-btn" id="invFPrints" onclick="switchInvTab('prints')"><span class="msi" style="font-size:14px;">print</span> Prints</button>
-                        <button class="btn-fav avatar-filter-btn" id="invFInventory" onclick="switchInvTab('inventory')"><span class="msi" style="font-size:14px;">inventory_2</span> Inventory</button>
+                        <button class="btn-fav sub-tab-btn active" id="invFPhotos" onclick="switchInvTab('photos')"><span class="msi" style="font-size:14px;">photo_library</span> Photos</button>
+                        <button class="btn-fav sub-tab-btn" id="invFIcons" onclick="switchInvTab('icons')"><span class="msi" style="font-size:14px;">account_circle</span> Icons</button>
+                        <button class="btn-fav sub-tab-btn" id="invFEmojis" onclick="switchInvTab('emojis')"><span class="msi" style="font-size:14px;">emoji_emotions</span> Emojis</button>
+                        <button class="btn-fav sub-tab-btn" id="invFStickers" onclick="switchInvTab('stickers')"><span class="msi" style="font-size:14px;">sticky_note_2</span> Stickers</button>
+                        <button class="btn-fav sub-tab-btn" id="invFPrints" onclick="switchInvTab('prints')"><span class="msi" style="font-size:14px;">print</span> Prints</button>
+                        <button class="btn-fav sub-tab-btn" id="invFInventory" onclick="switchInvTab('inventory')"><span class="msi" style="font-size:14px;">inventory_2</span> Inventory</button>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;">
                         <span id="invCount" style="font-size:12px;color:var(--tx3);"></span>
@@ -665,10 +665,10 @@
                 <div class="ts-root">
                     <div class="ts-header">
                         <div class="ts-tab-btns">
-                            <button class="btn-fav avatar-filter-btn active" id="tsBtnWorlds" onclick="tsSetView('worlds')">
+                            <button class="btn-fav sub-tab-btn active" id="tsBtnWorlds" onclick="tsSetView('worlds')">
                                 <span class="msi" style="font-size:15px;">travel_explore</span> Worlds
                             </button>
-                            <button class="btn-fav avatar-filter-btn" id="tsBtnPersons" onclick="tsSetView('persons')">
+                            <button class="btn-fav sub-tab-btn" id="tsBtnPersons" onclick="tsSetView('persons')">
                                 <span class="msi" style="font-size:15px;">group</span> Persons
                             </button>
                         </div>
@@ -767,6 +767,9 @@
 
     <script src="JavaScript/toast.js"></script>
     <script src="JavaScript/notification_toast.js"></script>
+    <script src="JavaScript/Profile_Item.js"></script>
+    <script src="JavaScript/Profile_Item_Small.js"></script>
+    <script src="JavaScript/Instance_Item.js"></script>
     <script src="JavaScript/core.js"></script>
     <script src="JavaScript/settings.js"></script>
     <script src="JavaScript/library.js"></script>

@@ -1100,8 +1100,14 @@ public class MainForm : Form
                                 Invoke(() => SendToJS("vrcWorldDetailError", new { error = "Could not load world" }));
                                 return;
                             }
-                            // Parse instances array: [[instanceId, userCount], ...]
-                            var instances = new List<object>();
+                            // Helper: parse owner ID (usr_xxx or grp_xxx) from instance ID string
+                            static string ParseOwnerId(string instId) {
+                                var m = System.Text.RegularExpressions.Regex.Match(instId, @"~(?:friends|hidden|private|group)\(([^)]+)\)");
+                                return m.Success ? m.Groups[1].Value : "";
+                            }
+
+                            // Phase 1 — build raw list with ownerIds
+                            var rawInstances = new List<(string instanceId, int users, string type, string region, string location, string ownerId)>();
                             var knownLocations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                             var instArr = world["instances"] as JArray;
                             if (instArr != null)
@@ -1116,7 +1122,7 @@ public class MainForm : Form
                                         var regionMatch = System.Text.RegularExpressions.Regex.Match(instId, @"region\(([^)]+)\)");
                                         var region = regionMatch.Success ? regionMatch.Groups[1].Value : "us";
                                         var loc = $"{wdId}:{instId}";
-                                        instances.Add(new { instanceId = instId, users, type = instType, region, location = loc });
+                                        rawInstances.Add((instId, users, instType, region, loc, ParseOwnerId(instId)));
                                         knownLocations.Add(loc);
                                     }
                                 }
@@ -1145,9 +1151,35 @@ public class MainForm : Form
                                     var (_, instId2, instType2) = VRChatApiService.ParseLocation(loc);
                                     var regionMatch2 = System.Text.RegularExpressions.Regex.Match(instId2, @"region\(([^)]+)\)");
                                     var region2 = regionMatch2.Success ? regionMatch2.Groups[1].Value : "us";
-                                    instances.Add(new { instanceId = instId2, users = nUsers, type = instType2, region = region2, location = loc });
+                                    rawInstances.Add((instId2, nUsers, instType2, region2, loc, ParseOwnerId(instId2)));
                                 }
                             }
+
+                            // Phase 2 — resolve owner names
+                            // Batch-fetch group names for any grp_ owners
+                            var uniqueGroupIds = rawInstances
+                                .Where(r => r.ownerId.StartsWith("grp_"))
+                                .Select(r => r.ownerId).Distinct().ToList();
+                            var groupInfoMap = new Dictionary<string, (string name, string shortCode)>();
+                            if (uniqueGroupIds.Count > 0)
+                            {
+                                var gTasks = uniqueGroupIds.ToDictionary(id => id, id => _vrcApi.GetGroupAsync(id));
+                                try { await Task.WhenAll(gTasks.Values); } catch { }
+                                foreach (var kv in gTasks)
+                                    if (!kv.Value.IsFaulted && kv.Value.Result != null)
+                                        groupInfoMap[kv.Key] = (
+                                            kv.Value.Result["name"]?.ToString() ?? "",
+                                            kv.Value.Result["shortCode"]?.ToString() ?? "");
+                            }
+                            var instances = rawInstances.Select(r => {
+                                var ownerName = "";
+                                var ownerGroup = "";
+                                if (r.ownerId.StartsWith("usr_"))
+                                    lock (_friendStore) { _friendStore.TryGetValue(r.ownerId, out var f); ownerName = f?["displayName"]?.ToString() ?? ""; }
+                                else if (r.ownerId.StartsWith("grp_") && groupInfoMap.TryGetValue(r.ownerId, out var info))
+                                    (ownerName, ownerGroup) = info;
+                                return new { instanceId = r.instanceId, users = r.users, type = r.type, region = r.region, location = r.location, ownerName, ownerGroup, ownerId = r.ownerId };
+                            }).ToList<object>();
                             var tags = world["tags"]?.ToObject<List<string>>() ?? new();
                             var (wTimeSeconds, wVisitCount, wLastVisited) = _worldTimeTracker.GetWorldStats(world["id"]?.ToString() ?? "");
                             Invoke(() => SendToJS("vrcWorldDetail", new
@@ -1427,6 +1459,8 @@ public class MainForm : Form
                                         image = m["user"] is JObject gmu
                                             ? (VRChatApiService.GetUserImage(gmu) is var gi && gi.Length > 0 ? gi : gmu["thumbnailUrl"]?.ToString() ?? "")
                                             : "",
+                                        status = m["user"]?["status"]?.ToString() ?? "",
+                                        statusDescription = m["user"]?["statusDescription"]?.ToString() ?? "",
                                         role = m["roleIds"]?.FirstOrDefault()?.ToString() ?? "",
                                         joinedAt = m["joinedAt"]?.ToString() ?? "",
                                     }),
@@ -1465,6 +1499,8 @@ public class MainForm : Form
                                 image = m["user"] is JObject gmu2
                                     ? (VRChatApiService.GetUserImage(gmu2) is var gi2 && gi2.Length > 0 ? gi2 : gmu2["thumbnailUrl"]?.ToString() ?? "")
                                     : "",
+                                status = m["user"]?["status"]?.ToString() ?? "",
+                                statusDescription = m["user"]?["statusDescription"]?.ToString() ?? "",
                                 role = m["roleIds"]?.FirstOrDefault()?.ToString() ?? "",
                                 joinedAt = m["joinedAt"]?.ToString() ?? "",
                             }).ToList();
@@ -1693,7 +1729,11 @@ public class MainForm : Form
                             .Take(200)
                             .ToList();
 
-                        // WORLDS: start from ALL WorldTimeTracker worlds.
+                        // WORLDS: flush pending time before reading so the displayed value is current.
+                        _worldTimeTracker.Tick();
+                        _worldTimeTracker.Save();
+
+                        // Start from ALL WorldTimeTracker worlds.
                         // Same issue — timeline top-200 could miss recently visited worlds.
                         var worldList = _worldTimeTracker.Worlds
                             .Select(kv =>

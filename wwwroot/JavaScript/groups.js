@@ -3,7 +3,15 @@ function loadMyGroups() {
     sendToCS({ action: 'vrcGetMyGroups' });
 }
 
+function refreshGroups() {
+    const btn = document.getElementById('groupsRefreshBtn');
+    if (btn) { btn.disabled = true; btn.querySelector('.msi').textContent = 'hourglass_empty'; }
+    sendToCS({ action: 'vrcGetMyGroups' });
+}
+
 function renderMyGroups(list) {
+    const btn = document.getElementById('groupsRefreshBtn');
+    if (btn) { btn.disabled = false; btn.querySelector('.msi').textContent = 'refresh'; }
     myGroups = list || [];
     myGroupsLoaded = true;
     const el = document.getElementById('myGroupsGrid');
@@ -164,10 +172,7 @@ function renderGroupDetail(g) {
 }
 
 function renderGroupMemberCard(m) {
-    const mImg = m.image ? `<img class="vrc-friend-avatar" src="${m.image}" onerror="this.style.display='none'">` : `<div class="vrc-friend-avatar" style="display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--tx3)">${esc((m.displayName || '?')[0])}</div>`;
-    const mId = (m.id || '').replace(/'/g, "\\'");
-    const joined = m.joinedAt ? new Date(m.joinedAt).toLocaleDateString() : '';
-    return `<div class="vrc-friend-card" onclick="document.getElementById('modalDetail').style.display='none';openFriendDetail('${mId}')">${mImg}<div class="vrc-friend-info"><div class="vrc-friend-name">${esc(m.displayName)}</div><div class="vrc-friend-loc">${joined ? 'Joined ' + joined : ''}</div></div></div>`;
+    return renderProfileItem(m, `closeDetailModal();openFriendDetail('${jsq(m.id || '')}')`);
 }
 
 function loadMoreGroupMembers() {
