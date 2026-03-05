@@ -58,12 +58,40 @@ const TL_TYPE_META = {
 
 // Notification type labels
 const NOTIF_TYPE_LABELS = {
-    friendRequest:  'Friend Request',
-    invite:         'Invite',
-    requestInvite:  'Invite Request',
-    votetokick:     'Vote to Kick',
-    message:        'Message',
-    halted:         'Instance Closed',
+    // v1
+    friendRequest:              'Friend Request',
+    invite:                     'World Invite',
+    requestInvite:              'Invite Request',
+    inviteResponse:             'Invite Response',
+    requestInviteResponse:      'Invite Req. Response',
+    votetokick:                 'Vote to Kick',
+    boop:                       'Boop',
+    message:                    'Message',
+    halted:                     'Instance Closed',
+    // group
+    'group.announcement':       'Group Announcement',
+    'group.invite':             'Group Invite',
+    'group.joinRequest':        'Group Join Request',
+    'group.informationRequest': 'Group Info Request',
+    'group.transfer':           'Group Transfer',
+    'group.informative':        'Group Info',
+    'group.post':               'Group Post',
+    'group.event.created':      'Group Event Created',
+    'group.event.starting':     'Group Event Starting',
+    // v2-only
+    'avatarreview.success':     'Avatar Approved',
+    'avatarreview.failure':     'Avatar Rejected',
+    'badge.earned':             'Badge Earned',
+    'economy.alert':            'Economy Alert',
+    'economy.received.gift':    'Gift Received',
+    'event.announcement':       'Event Announcement',
+    'invite.instance.contentGated': 'Content Gated Invite',
+    'moderation.contentrestriction': 'Content Restriction',
+    'moderation.notice':        'Moderation Notice',
+    'moderation.report.closed': 'Report Closed',
+    'moderation.warning.group': 'Group Warning',
+    'promo.redeem':             'Promo Redeemed',
+    'vrcplus.gift':             'VRC+ Gift',
 };
 
 // Public API
@@ -564,8 +592,9 @@ function renderTlNotifBody(ev) {
     const av  = ev.senderImage
         ? `<div class="tl-av" style="background-image:url('${cssUrl(ev.senderImage)}')"></div>`
         : `<div class="tl-av tl-av-letter">${esc((ev.senderName || '?')[0].toUpperCase())}</div>`;
-    const sub = ev.message ? `<div class="tl-sub-label">${esc(ev.message.slice(0, 70))}${ev.message.length > 70 ? '…' : ''}</div>` : '';
-    return `<div class="tl-card-body">${av}<div class="tl-card-info"><div class="tl-main-label">${esc(ev.senderName || 'Unknown')}</div><div class="tl-type-chip">${esc(typeLabel)}</div>${sub}</div></div>`;
+    const titleCtx = ev.notifTitle ? `<div class="tl-sub-label" style="color:var(--tx2);">${esc(ev.notifTitle.slice(0, 60))}${ev.notifTitle.length > 60 ? '…' : ''}</div>` : '';
+    const sub = ev.message ? `<div class="tl-sub-label">${esc(ev.message.slice(0, 60))}${ev.message.length > 60 ? '…' : ''}</div>` : '';
+    return `<div class="tl-card-body">${av}<div class="tl-card-info"><div class="tl-main-label">${esc(ev.senderName || typeLabel)}</div><div class="tl-type-chip">${esc(typeLabel)}</div>${titleCtx}${sub}</div></div>`;
 }
 
 function tlPlayerAvatars(players, max) {
@@ -776,7 +805,7 @@ function renderTlDetailNotif(ev, el) {
         <div style="display:flex;gap:16px;align-items:center;margin-bottom:20px;">
             ${av}
             <div>
-                <h2 style="margin:0 0 4px;color:var(--tx0);font-size:18px;">${esc(ev.senderName || 'Unknown')}</h2>
+                <h2 style="margin:0 0 4px;color:var(--tx0);font-size:18px;">${esc(ev.senderName || typeLabel)}</h2>
                 <div style="font-size:11px;color:var(--warn);font-weight:700;letter-spacing:.05em;">${esc(typeLabel.toUpperCase())}</div>
             </div>
         </div>
@@ -784,6 +813,7 @@ function renderTlDetailNotif(ev, el) {
             <div class="fd-meta-row"><span class="fd-meta-label">Date</span><span>${esc(dateStr)}</span></div>
             <div class="fd-meta-row"><span class="fd-meta-label">Time</span><span>${esc(timeStr)}</span></div>
             <div class="fd-meta-row"><span class="fd-meta-label">Type</span><span>${esc(typeLabel)}</span></div>
+            ${ev.notifTitle ? `<div class="fd-meta-row"><span class="fd-meta-label">Context</span><span>${esc(ev.notifTitle)}</span></div>` : ''}
             ${ev.message ? `<div class="fd-meta-row"><span class="fd-meta-label">Message</span><span>${esc(ev.message)}</span></div>` : ''}
         </div>
         <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;">

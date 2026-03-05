@@ -62,6 +62,7 @@ public class TimelineService : IDisposable
         // Notification event fields
         public string NotifId      { get; set; } = "";
         public string NotifType    { get; set; } = "";
+        public string NotifTitle   { get; set; } = "";
         public string SenderName   { get; set; } = "";
         public string SenderId     { get; set; } = "";
         public string SenderImage  { get; set; } = "";
@@ -171,6 +172,8 @@ public class TimelineService : IDisposable
             CREATE INDEX IF NOT EXISTS idx_fe_friend ON friend_events(friend_id);
         ";
         cmd.ExecuteNonQuery();
+        // Column migration (safe — SQLite ignores ADD COLUMN if caught)
+        try { using var mc = _db.CreateCommand(); mc.CommandText = "ALTER TABLE events ADD COLUMN notif_title TEXT NOT NULL DEFAULT ''"; mc.ExecuteNonQuery(); } catch { }
     }
 
     // JSON to SQLite migration
@@ -248,7 +251,7 @@ public class TimelineService : IDisposable
         {
             cmd.CommandText = @"SELECT id,type,timestamp,world_id,world_name,world_thumb,
                 location,photo_path,photo_url,user_id,user_name,user_image,
-                notif_id,notif_type,sender_name,sender_id,sender_image,message
+                notif_id,notif_type,notif_title,sender_name,sender_id,sender_image,message
                 FROM events ORDER BY timestamp ASC";
             using var r = cmd.ExecuteReader();
             while (r.Read())
@@ -270,10 +273,11 @@ public class TimelineService : IDisposable
                     UserImage   = r.GetString(11),
                     NotifId     = r.GetString(12),
                     NotifType   = r.GetString(13),
-                    SenderName  = r.GetString(14),
-                    SenderId    = r.GetString(15),
-                    SenderImage = r.GetString(16),
-                    Message     = r.GetString(17),
+                    NotifTitle  = r.GetString(14),
+                    SenderName  = r.GetString(15),
+                    SenderId    = r.GetString(16),
+                    SenderImage = r.GetString(17),
+                    Message     = r.GetString(18),
                     Players     = playerMap.TryGetValue(id, out var pl) ? pl : new(),
                 };
                 _events.Add(ev);
@@ -399,7 +403,7 @@ public class TimelineService : IDisposable
             using var cmd = _db.CreateCommand();
             cmd.CommandText = $@"SELECT id,type,timestamp,world_id,world_name,world_thumb,
                 location,photo_path,photo_url,user_id,user_name,user_image,
-                notif_id,notif_type,sender_name,sender_id,sender_image,message
+                notif_id,notif_type,notif_title,sender_name,sender_id,sender_image,message
                 FROM events WHERE id IN ({inE}) ORDER BY timestamp DESC";
             for (int i = 0; i < ids.Count; i++) cmd.Parameters.AddWithValue($"$e{i}", ids[i]);
             using var r = cmd.ExecuteReader();
@@ -422,10 +426,11 @@ public class TimelineService : IDisposable
                     UserImage   = r.GetString(11),
                     NotifId     = r.GetString(12),
                     NotifType   = r.GetString(13),
-                    SenderName  = r.GetString(14),
-                    SenderId    = r.GetString(15),
-                    SenderImage = r.GetString(16),
-                    Message     = r.GetString(17),
+                    NotifTitle  = r.GetString(14),
+                    SenderName  = r.GetString(15),
+                    SenderId    = r.GetString(16),
+                    SenderImage = r.GetString(17),
+                    Message     = r.GetString(18),
                     Players     = playerMap.TryGetValue(id, out var pl) ? pl : new(),
                 });
             }
@@ -514,7 +519,7 @@ public class TimelineService : IDisposable
             using var cmd = _db.CreateCommand();
             cmd.CommandText = $@"SELECT id,type,timestamp,world_id,world_name,world_thumb,
                 location,photo_path,photo_url,user_id,user_name,user_image,
-                notif_id,notif_type,sender_name,sender_id,sender_image,message
+                notif_id,notif_type,notif_title,sender_name,sender_id,sender_image,message
                 FROM events WHERE id IN ({inE}) ORDER BY timestamp DESC";
             for (int i = 0; i < ids.Count; i++) cmd.Parameters.AddWithValue($"$e{i}", ids[i]);
             using var r = cmd.ExecuteReader();
@@ -537,10 +542,11 @@ public class TimelineService : IDisposable
                     UserImage   = r.GetString(11),
                     NotifId     = r.GetString(12),
                     NotifType   = r.GetString(13),
-                    SenderName  = r.GetString(14),
-                    SenderId    = r.GetString(15),
-                    SenderImage = r.GetString(16),
-                    Message     = r.GetString(17),
+                    NotifTitle  = r.GetString(14),
+                    SenderName  = r.GetString(15),
+                    SenderId    = r.GetString(16),
+                    SenderImage = r.GetString(17),
+                    Message     = r.GetString(18),
                     Players     = playerMap.TryGetValue(id, out var pl) ? pl : new(),
                 });
             }
@@ -593,7 +599,7 @@ public class TimelineService : IDisposable
             using var cmd = _db.CreateCommand();
             cmd.CommandText = $@"SELECT id,type,timestamp,world_id,world_name,world_thumb,
                 location,photo_path,photo_url,user_id,user_name,user_image,
-                notif_id,notif_type,sender_name,sender_id,sender_image,message
+                notif_id,notif_type,notif_title,sender_name,sender_id,sender_image,message
                 FROM events WHERE id IN ({inE}) ORDER BY timestamp DESC";
             for (int i = 0; i < ids.Count; i++) cmd.Parameters.AddWithValue($"$e{i}", ids[i]);
             using var r = cmd.ExecuteReader();
@@ -616,10 +622,11 @@ public class TimelineService : IDisposable
                     UserImage   = r.GetString(11),
                     NotifId     = r.GetString(12),
                     NotifType   = r.GetString(13),
-                    SenderName  = r.GetString(14),
-                    SenderId    = r.GetString(15),
-                    SenderImage = r.GetString(16),
-                    Message     = r.GetString(17),
+                    NotifTitle  = r.GetString(14),
+                    SenderName  = r.GetString(15),
+                    SenderId    = r.GetString(16),
+                    SenderImage = r.GetString(17),
+                    Message     = r.GetString(18),
                     Players     = playerMap.TryGetValue(id, out var pl) ? pl : new(),
                 });
             }
@@ -894,11 +901,11 @@ public class TimelineService : IDisposable
                 INSERT OR REPLACE INTO events
                     (id,type,timestamp,world_id,world_name,world_thumb,location,
                      photo_path,photo_url,user_id,user_name,user_image,
-                     notif_id,notif_type,sender_name,sender_id,sender_image,message)
+                     notif_id,notif_type,notif_title,sender_name,sender_id,sender_image,message)
                 VALUES
                     ($id,$type,$ts,$wid,$wn,$wt,$loc,
                      $pp,$pu,$uid,$un,$ui,
-                     $nid,$nt,$sn,$si,$sim,$msg)";
+                     $nid,$nt,$ntitle,$sn,$si,$sim,$msg)";
             cmd.Parameters.AddWithValue("$id",   ev.Id);
             cmd.Parameters.AddWithValue("$type", ev.Type);
             cmd.Parameters.AddWithValue("$ts",   ev.Timestamp);
@@ -911,9 +918,10 @@ public class TimelineService : IDisposable
             cmd.Parameters.AddWithValue("$uid",  ev.UserId);
             cmd.Parameters.AddWithValue("$un",   ev.UserName);
             cmd.Parameters.AddWithValue("$ui",   ev.UserImage);
-            cmd.Parameters.AddWithValue("$nid",  ev.NotifId);
-            cmd.Parameters.AddWithValue("$nt",   ev.NotifType);
-            cmd.Parameters.AddWithValue("$sn",   ev.SenderName);
+            cmd.Parameters.AddWithValue("$nid",    ev.NotifId);
+            cmd.Parameters.AddWithValue("$nt",     ev.NotifType);
+            cmd.Parameters.AddWithValue("$ntitle", ev.NotifTitle);
+            cmd.Parameters.AddWithValue("$sn",     ev.SenderName);
             cmd.Parameters.AddWithValue("$si",   ev.SenderId);
             cmd.Parameters.AddWithValue("$sim",  ev.SenderImage);
             cmd.Parameters.AddWithValue("$msg",  ev.Message);
@@ -952,14 +960,17 @@ public class TimelineService : IDisposable
             cmd.Transaction = tx;
             cmd.CommandText = @"
                 UPDATE events SET
-                    world_name==$wn, world_thumb=$wt, user_image=$ui,
-                    photo_url=$pu, message=$msg
+                    world_name=$wn, world_thumb=$wt, user_image=$ui,
+                    photo_url=$pu, message=$msg,
+                    sender_name=$sn, sender_image=$sim
                 WHERE id=$id";
             cmd.Parameters.AddWithValue("$wn",  ev.WorldName);
             cmd.Parameters.AddWithValue("$wt",  ev.WorldThumb);
             cmd.Parameters.AddWithValue("$ui",  ev.UserImage);
             cmd.Parameters.AddWithValue("$pu",  ev.PhotoUrl);
             cmd.Parameters.AddWithValue("$msg", ev.Message);
+            cmd.Parameters.AddWithValue("$sn",  ev.SenderName);
+            cmd.Parameters.AddWithValue("$sim", ev.SenderImage);
             cmd.Parameters.AddWithValue("$id",  ev.Id);
             cmd.ExecuteNonQuery();
 

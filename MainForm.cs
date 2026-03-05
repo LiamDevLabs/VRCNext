@@ -3984,16 +3984,32 @@ var list = avatars.Select(a => new
                     senderImg = cached.image;
         }
 
+        // Extract message — for v1 invite responses the text lives in details, not message
+        var msgText = (string)n.message;
+        if (string.IsNullOrEmpty(msgText))
+        {
+            JObject? detObj = null;
+            var rawDet = n.details as JToken;
+            if (rawDet is JObject jo) detObj = jo;
+            else if (rawDet?.Type == JTokenType.String) { try { detObj = JObject.Parse(rawDet.ToString()); } catch { } }
+            if (detObj != null)
+                msgText = detObj["responseMessage"]?.ToString()
+                       ?? detObj["inviteMessage"]?.ToString()
+                       ?? detObj["requestMessage"]?.ToString()
+                       ?? "";
+        }
+
         var notifEv = new TimelineService.TimelineEvent
         {
             Type        = "notification",
             Timestamp   = n.created_at,
             NotifId     = n.id,
             NotifType   = n.type,
+            NotifTitle  = (string?)n._title ?? "",
             SenderName  = n.senderUsername,
             SenderId    = n.senderUserId,
             SenderImage = senderImg,
-            Message     = n.message,
+            Message     = msgText,
         };
         _timeline.AddEvent(notifEv);
 
@@ -4023,6 +4039,46 @@ var list = avatars.Select(a => new
                 }
                 catch { }
             });
+        }
+
+        // For group notifications without a sender: fetch group name + icon from _data
+        var notifTypeStr = (string)n.type;
+        if (string.IsNullOrEmpty(senderUserId) && notifTypeStr.StartsWith("group.") && _vrcApi.IsLoggedIn)
+        {
+            JObject? dataObj = null;
+            try
+            {
+                var rawData = n._data as JToken;
+                if (rawData is JObject djo) dataObj = djo;
+                else if (rawData?.Type == JTokenType.String) { try { dataObj = JObject.Parse(rawData.ToString()); } catch { } }
+            }
+            catch { }
+            // groupId can be in "groupId" directly, or in "ownerId" (group.event.created uses ownerId = grp_xxx)
+            var groupId = dataObj?["groupId"]?.ToString();
+            if (string.IsNullOrEmpty(groupId))
+            {
+                var ownerId = dataObj?["ownerId"]?.ToString();
+                if (!string.IsNullOrEmpty(ownerId) && ownerId.StartsWith("grp_")) groupId = ownerId;
+            }
+            if (!string.IsNullOrEmpty(groupId))
+            {
+                var evId = notifEv.Id;
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var group = await _vrcApi.GetGroupAsync(groupId);
+                        if (group == null) return;
+                        var groupName = group["name"]?.ToString() ?? "";
+                        var groupIcon = group["iconUrl"]?.ToString() ?? "";
+                        if (string.IsNullOrEmpty(groupName) && string.IsNullOrEmpty(groupIcon)) return;
+                        _timeline.UpdateEvent(evId, ev => { ev.SenderName = groupName; ev.SenderImage = groupIcon; });
+                        var updated = _timeline.GetEvents().FirstOrDefault(e => e.Id == evId);
+                        if (updated != null) Invoke(() => SendToJS("timelineEvent", BuildTimelinePayload(updated)));
+                    }
+                    catch { }
+                });
+            }
         }
 
         return BuildTimelinePayload(notifEv);
@@ -5511,6 +5567,7 @@ var list = avatars.Select(a => new
         userImage   = ResolvePlayerImage(ev.UserId, ev.UserImage),
         notifId     = ev.NotifId,
         notifType   = ev.NotifType,
+        notifTitle  = ev.NotifTitle,
         senderName  = ev.SenderName,
         senderId    = ev.SenderId,
         senderImage = ResolvePlayerImage(ev.SenderId, ev.SenderImage),
