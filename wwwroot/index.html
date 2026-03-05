@@ -31,6 +31,7 @@
                     <button class="nav-btn nav-sub" onclick="showTab(8)"><span class="ni msi">article</span><span class="nl">Activity Log</span></button>
                     <button class="nav-btn nav-sub" onclick="showTab(15)"><span class="ni msi">hub</span><span class="nl">Mutual Network</span></button>
                     <button class="nav-btn nav-sub" onclick="showTab(16)"><span class="ni msi">schedule</span><span class="nl">Time Spent</span></button>
+                    <button class="nav-btn nav-sub" onclick="showTab(18)"><span class="ni msi">mic</span><span class="nl">Voice Fight</span></button>
                 </div>
             </div>
             <button class="nav-btn" onclick="showTab(9)"><span class="ni msi">settings</span><span class="nl">Settings</span></button>
@@ -701,6 +702,54 @@
             </div>
             <!-- Tab 17: Calendar (content built by calendar.js) -->
             <div class="tab" id="tab17"></div>
+
+            <!-- Tab 18: Voice Fight -->
+            <div class="tab" id="tab18">
+                <div class="sf-layout">
+                    <!-- Status -->
+                    <div class="sf-card sf-status-card">
+                        <div class="sf-status-row">
+                            <div class="sf-status"><span class="sf-dot offline" id="vfDot"></span><span id="vfStatusText">Not running</span></div>
+                            <button class="btn-f" id="vfConnBtn" onclick="vfConnect()"><span class="msi" style="font-size:16px;">play_arrow</span> Start</button>
+                        </div>
+                    </div>
+                    <!-- Device -->
+                    <div class="sf-card">
+                        <div class="sf-card-header"><span class="msi">mic</span> Input Device</div>
+                        <select id="vfDeviceSelect" class="lib-filter-select" style="width:100%;margin-bottom:12px;" onchange="vfSetInputDevice(this.value)"><option>Loading...</option></select>
+                        <div class="sf-card-header" style="margin-top:4px;"><span class="msi">graphic_eq</span> Mic Level</div>
+                        <div class="vf-meter-wrap">
+                            <div class="vf-meter-bar" id="vfMeterBar"></div>
+                        </div>
+                    </div>
+                    <!-- Recognized Words -->
+                    <div class="sf-card">
+                        <div class="sf-card-header"><span class="msi">hearing</span> Recognized Words</div>
+                        <div class="vf-recognized-wrap">
+                            <span id="vfRecognizedText" class="vf-recognized-text">—</span>
+                        </div>
+                    </div>
+                    <!-- Stop Command -->
+                    <div class="sf-card">
+                        <div class="sf-card-header"><span class="msi">stop_circle</span> Stop Command</div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <input id="vfStopWordInput" class="vf-word-input" placeholder="Stop word…"
+                                oninput="vfStopWordChanged(this.value)"
+                                onblur="vfSetStopWord(this.value)">
+                            <button class="vf-btn-icon" onclick="vfStopSound()" title="Stop playback now"><span class="msi">stop</span></button>
+                        </div>
+                        <div style="font-size:11px;color:var(--tx3);margin-top:6px;">Say this word to instantly stop any playing sound.</div>
+                    </div>
+                    <!-- Sound Items -->
+                    <div class="sf-card">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                            <div class="sf-card-header" style="margin-bottom:0;"><span class="msi">library_music</span> Sounds</div>
+                            <button class="btn-f" onclick="vfAddSound()"><span class="msi" style="font-size:16px;">add</span> Add Sound</button>
+                        </div>
+                        <div id="vfItems"><div class="empty-msg">No sounds added yet.</div></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -813,6 +862,7 @@
     <script src="JavaScript/timespent.js"></script>
     <script src="JavaScript/Event_Item.js"></script>
     <script src="JavaScript/calendar.js"></script>
+    <script src="JavaScript/voicefight.js"></script>
     <script src="JavaScript/init.js"></script>
 </body>
 </html>

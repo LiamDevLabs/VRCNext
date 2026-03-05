@@ -329,6 +329,80 @@ public class AppSettings
     }
 }
 
+// Voice Fight settings - persisted separately from main settings
+public class VoiceFightSettings
+{
+    public int InputDeviceIndex { get; set; }
+    public string StopWord { get; set; } = "";
+    public List<VfSoundItem> Items { get; set; } = new();
+
+    public class VfSoundItem
+    {
+        public string Word { get; set; } = "";
+        public List<VfSoundFile> Files { get; set; } = new();
+
+        // Legacy single-file fields from pre-v2 saves; migrated to Files on Load.
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public string? FilePath { get; set; }
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public float? VolumePercent { get; set; }
+
+        public class VfSoundFile
+        {
+            public string FilePath { get; set; } = "";
+            public float VolumePercent { get; set; } = 100f;
+        }
+    }
+
+    private static string SavePath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "VRCNext", "voicefight_settings.json");
+
+    public static VoiceFightSettings Load()
+    {
+        try
+        {
+            if (File.Exists(SavePath))
+            {
+                var json = File.ReadAllText(SavePath);
+                var settings = JsonConvert.DeserializeObject<VoiceFightSettings>(json) ?? new();
+
+                // Migrate legacy single-file items
+                bool migrated = false;
+                foreach (var item in settings.Items)
+                {
+                    if (item.Files.Count == 0 && !string.IsNullOrWhiteSpace(item.FilePath))
+                    {
+                        item.Files.Add(new VfSoundItem.VfSoundFile
+                        {
+                            FilePath = item.FilePath,
+                            VolumePercent = item.VolumePercent ?? 100f
+                        });
+                        item.FilePath = null;
+                        item.VolumePercent = null;
+                        migrated = true;
+                    }
+                }
+                if (migrated) settings.Save();
+                return settings;
+            }
+        }
+        catch { }
+        return new();
+    }
+
+    public void Save()
+    {
+        try
+        {
+            var dir = Path.GetDirectoryName(SavePath)!;
+            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            File.WriteAllText(SavePath, JsonConvert.SerializeObject(this, Formatting.Indented));
+        }
+        catch { }
+    }
+}
+
 /// <summary>
 /// Tracks time spent with users (same instance) and last-seen timestamps.
 /// Persisted in the shared timeline.db (SQLite), user_tracking table.

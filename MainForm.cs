@@ -66,6 +66,10 @@ public class MainForm : Form
     private string _lastTrackedWorldId = "";
     private FileSystemWatcher? _vrcPhotoWatcher;
 
+    // Voice Fight
+    private VoiceFightService? _voiceFight;
+    private VoiceFightSettings _vfSettings = VoiceFightSettings.Load();
+
     // User detail cache: serves profiles instantly on repeated opens
     private readonly Dictionary<string, (object payload, DateTime cachedAt)> _userDetailCache = new();
 
@@ -113,11 +117,19 @@ public class MainForm : Form
         _webView = new WebView2 { Dock = DockStyle.Fill };
         Controls.Add(_webView);
 
-        _uptimeTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+        _uptimeTimer = new System.Windows.Forms.Timer { Interval = 100 };
+        int _uptimeTick = 0;
         _uptimeTimer.Tick += (s, e) =>
         {
-            if (_relayRunning)
-                SendToJS("uptimeTick", (DateTime.Now - _relayStart).ToString(@"hh\:mm\:ss"));
+            if (_voiceFight?.IsRunning == true)
+                SendToJS("vfMeter", new { level = _voiceFight.MeterLevel });
+            _uptimeTick++;
+            if (_uptimeTick >= 10)
+            {
+                _uptimeTick = 0;
+                if (_relayRunning)
+                    SendToJS("uptimeTick", (DateTime.Now - _relayStart).ToString(@"hh\:mm\:ss"));
+            }
         };
 
         _fileWatcher.NewFile += OnNewFile;
@@ -2055,6 +2067,208 @@ public class MainForm : Form
                     }
                     break;
 
+                // Voice Fight
+                case "vfGetDevices":
+                    {
+                        var devices = VoiceFightService.GetInputDevices();
+                        SendToJS("vfDevices", new { devices, savedIndex = _vfSettings.InputDeviceIndex, stopWord = _vfSettings.StopWord });
+                    }
+                    break;
+
+                case "vfGetItems":
+                    SendToJS("vfItems", VfBuildItemsPayload());
+                    break;
+
+                case "vfStart":
+                    {
+                        int devIdx = msg["deviceIndex"]?.Value<int>() ?? 0;
+                        _vfSettings.InputDeviceIndex = devIdx;
+                        _vfSettings.Save();
+
+                        _voiceFight?.Dispose();
+                        _voiceFight = new VoiceFightService();
+                        _voiceFight.OnLog += s => Invoke(() => SendToJS("log", new { msg = s, color = "sec" }));
+                        _voiceFight.OnKeywordTriggered += word => Invoke(() => SendToJS("vfKeyword", new { word }));
+                        _voiceFight.OnRecognized += (text, isPartial) => Invoke(() => SendToJS("vfRecognized", new { text, isPartial }));
+                        _voiceFight.SetKeywords(_vfSettings.Items);
+                        _voiceFight.SetStopWord(_vfSettings.StopWord);
+                        _voiceFight.Start(devIdx);
+                        if (!_uptimeTimer.Enabled) _uptimeTimer.Start();
+                        SendToJS("vfState", new { running = true });
+                    }
+                    break;
+
+                case "vfStop":
+                    _voiceFight?.Stop();
+                    if (!_relayRunning) _uptimeTimer.Stop();
+                    SendToJS("vfState", new { running = false });
+                    SendToJS("vfMeter", new { level = 0f });
+                    break;
+
+                case "vfAddSound":
+                    // Creates a new item (group) with one sound file
+                    Invoke(() =>
+                    {
+                        using var dlg = new OpenFileDialog
+                        {
+                            Filter = "Audio files (*.wav;*.mp3;*.ogg)|*.wav;*.mp3;*.ogg|All files (*.*)|*.*",
+                            Title = "Add Sound"
+                        };
+                        if (dlg.ShowDialog() != DialogResult.OK) return;
+                        var path = dlg.FileName;
+                        var duration = VoiceFightService.GetDuration(path);
+                        var file = new VoiceFightSettings.VfSoundItem.VfSoundFile { FilePath = path, VolumePercent = 100f };
+                        var item = new VoiceFightSettings.VfSoundItem { Word = "", Files = new() { file } };
+                        _vfSettings.Items.Add(item);
+                        _vfSettings.Save();
+                        _voiceFight?.SetKeywords(_vfSettings.Items);
+                        int newIdx = _vfSettings.Items.Count - 1;
+                        SendToJS("vfItemAdded", new
+                        {
+                            index = newIdx,
+                            word = "",
+                            files = new[] { new { soundIndex = 0, filePath = path, fileName = Path.GetFileName(path), durationMs = (int)duration.TotalMilliseconds, volumePercent = 100f } }
+                        });
+                    });
+                    break;
+
+                case "vfAddSoundToItem":
+                    // Adds another sound file to an existing item
+                    {
+                        int itemIdx = msg["itemIndex"]?.Value<int>() ?? -1;
+                        if (itemIdx >= 0 && itemIdx < _vfSettings.Items.Count)
+                        {
+                            Invoke(() =>
+                            {
+                                using var dlg = new OpenFileDialog
+                                {
+                                    Filter = "Audio files (*.wav;*.mp3;*.ogg)|*.wav;*.mp3;*.ogg|All files (*.*)|*.*",
+                                    Title = "Add Sound"
+                                };
+                                if (dlg.ShowDialog() != DialogResult.OK) return;
+                                var path = dlg.FileName;
+                                var duration = VoiceFightService.GetDuration(path);
+                                var file = new VoiceFightSettings.VfSoundItem.VfSoundFile { FilePath = path, VolumePercent = 100f };
+                                _vfSettings.Items[itemIdx].Files.Add(file);
+                                _vfSettings.Save();
+                                _voiceFight?.SetKeywords(_vfSettings.Items);
+                                SendToJS("vfSoundAdded", new
+                                {
+                                    itemIndex = itemIdx,
+                                    soundIndex = _vfSettings.Items[itemIdx].Files.Count - 1,
+                                    filePath = path,
+                                    fileName = Path.GetFileName(path),
+                                    durationMs = (int)duration.TotalMilliseconds,
+                                    volumePercent = 100f
+                                });
+                            });
+                        }
+                    }
+                    break;
+
+                case "vfDeleteItem":
+                    {
+                        int idx = msg["index"]?.Value<int>() ?? -1;
+                        if (idx >= 0 && idx < _vfSettings.Items.Count)
+                        {
+                            _vfSettings.Items.RemoveAt(idx);
+                            _vfSettings.Save();
+                            _voiceFight?.SetKeywords(_vfSettings.Items);
+                            SendToJS("vfItems", VfBuildItemsPayload());
+                        }
+                    }
+                    break;
+
+                case "vfDeleteSound":
+                    {
+                        int itemIdx = msg["itemIndex"]?.Value<int>() ?? -1;
+                        int soundIdx = msg["soundIndex"]?.Value<int>() ?? -1;
+                        if (itemIdx >= 0 && itemIdx < _vfSettings.Items.Count)
+                        {
+                            var item = _vfSettings.Items[itemIdx];
+                            if (soundIdx >= 0 && soundIdx < item.Files.Count)
+                            {
+                                item.Files.RemoveAt(soundIdx);
+                                _vfSettings.Save();
+                                _voiceFight?.SetKeywords(_vfSettings.Items);
+                                SendToJS("vfItems", VfBuildItemsPayload());
+                            }
+                        }
+                    }
+                    break;
+
+                case "vfPlaySound":
+                    {
+                        int itemIdx = msg["itemIndex"]?.Value<int>() ?? -1;
+                        int soundIdx = msg["soundIndex"]?.Value<int>() ?? -1;
+                        if (itemIdx >= 0 && itemIdx < _vfSettings.Items.Count)
+                        {
+                            var item = _vfSettings.Items[itemIdx];
+                            if (soundIdx >= 0 && soundIdx < item.Files.Count)
+                            {
+                                var f = item.Files[soundIdx];
+                                _voiceFight?.PlayFile(f.FilePath, f.VolumePercent);
+                            }
+                        }
+                    }
+                    break;
+
+                case "vfSetStopWord":
+                    {
+                        var stopWord = msg["word"]?.ToString() ?? "";
+                        _vfSettings.StopWord = stopWord;
+                        _vfSettings.Save();
+                        _voiceFight?.SetStopWord(stopWord);
+                    }
+                    break;
+
+                case "vfStopSound":
+                    _voiceFight?.StopPlayback();
+                    break;
+
+                case "vfSetWord":
+                    {
+                        int idx = msg["index"]?.Value<int>() ?? -1;
+                        var word = msg["word"]?.ToString() ?? "";
+                        if (idx >= 0 && idx < _vfSettings.Items.Count)
+                        {
+                            _vfSettings.Items[idx].Word = word;
+                            _vfSettings.Save();
+                            _voiceFight?.SetKeywords(_vfSettings.Items);
+                        }
+                    }
+                    break;
+
+                case "vfSetVolume":
+                    {
+                        int itemIdx = msg["itemIndex"]?.Value<int>() ?? -1;
+                        int soundIdx = msg["soundIndex"]?.Value<int>() ?? -1;
+                        float vol = msg["volume"]?.Value<float>() ?? 100f;
+                        if (itemIdx >= 0 && itemIdx < _vfSettings.Items.Count)
+                        {
+                            var item = _vfSettings.Items[itemIdx];
+                            if (soundIdx >= 0 && soundIdx < item.Files.Count)
+                            {
+                                item.Files[soundIdx].VolumePercent = vol;
+                                _vfSettings.Save();
+                            }
+                        }
+                    }
+                    break;
+
+                case "vfSetInputDevice":
+                    {
+                        int devIdx = msg["deviceIndex"]?.Value<int>() ?? 0;
+                        _vfSettings.InputDeviceIndex = devIdx;
+                        _vfSettings.Save();
+                        if (_voiceFight?.IsRunning == true)
+                        {
+                            _voiceFight.Stop();
+                            _voiceFight.Start(devIdx);
+                        }
+                    }
+                    break;
+
                 // OSC Tool
                 case "oscConnect":
                     {
@@ -3587,6 +3801,22 @@ var list = avatars.Select(a => new
             msg = _vrcImgUrlRegex.Replace(msg, m => $"\"{_imgCache.Get(m.Groups[1].Value)}\"");
         try { _webView.CoreWebView2.PostWebMessageAsJson(msg); } catch { }
     }
+
+    // Voice Fight helpers
+    private object VfBuildItemsPayload() =>
+        _vfSettings.Items.Select((item, i) => new
+        {
+            index = i,
+            word = item.Word,
+            files = item.Files.Select((f, si) => new
+            {
+                soundIndex = si,
+                filePath = f.FilePath,
+                fileName = Path.GetFileName(f.FilePath),
+                durationMs = (int)VoiceFightService.GetDuration(f.FilePath).TotalMilliseconds,
+                volumePercent = f.VolumePercent
+            }).ToList()
+        }).ToList();
 
     // Relay Control
     private void StartRelay()
@@ -6167,6 +6397,7 @@ var list = avatars.Select(a => new
         _fileWatcher.Dispose();
         _uptimeTimer.Dispose();
         _steamVR?.Dispose();
+        _voiceFight?.Dispose();
         _osc?.Dispose();
         _timeline.Dispose();
         _photoPlayersStore.Dispose();

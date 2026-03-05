@@ -6751,3 +6751,192 @@ div.vn-select {
     display: inline-block;
     animation: ts-spin .8s linear infinite;
 }
+
+/* ══════════════════════════════════════════
+   Voice Fight
+══════════════════════════════════════════ */
+.vf-meter-wrap {
+    height: 8px;
+    background: var(--bg-input);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.vf-meter-bar {
+    height: 100%;
+    width: 0%;
+    background: var(--ok);
+    border-radius: 4px;
+    transition: width 0.08s ease, background 0.15s;
+}
+.vf-item {
+    background: var(--bg-input);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: background 0.15s;
+}
+.vf-item:last-child { margin-bottom: 0; }
+.vf-item-flash { background: rgba(56,132,255,.18) !important; }
+.vf-item-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.vf-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.vf-filename {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--tx0);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+.vf-length {
+    font-size: 10px;
+    color: var(--tx3);
+    font-weight: 600;
+    letter-spacing: .3px;
+}
+.vf-item-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+.vf-btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    background: var(--bg-hover);
+    color: var(--tx1);
+    cursor: pointer;
+    transition: background .15s, color .15s;
+}
+.vf-btn-icon:hover { background: var(--accent); color: #fff; }
+.vf-btn-icon .msi { font-size: 16px; }
+.vf-btn-del:hover { background: var(--err) !important; }
+.vf-word-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--bg-card);
+    border: 1.5px solid var(--brd);
+    border-radius: 6px;
+    color: var(--tx0);
+    font-size: 12px;
+    font-family: inherit;
+    padding: 6px 10px;
+    outline: none;
+    transition: border-color .15s;
+}
+.vf-word-input:focus { border-color: var(--accent); }
+.vf-word-input::placeholder { color: var(--tx3); }
+.vf-vol-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.vf-vol-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--tx3);
+    letter-spacing: .4px;
+    min-width: 24px;
+}
+.vf-vol-slider {
+    flex: 1;
+    accent-color: var(--accent);
+    cursor: pointer;
+    height: 4px;
+}
+.vf-vol-val {
+    font-size: 10px;
+    color: var(--tx2);
+    min-width: 32px;
+    text-align: right;
+}
+.vf-recognized-wrap {
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+}
+.vf-recognized-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--tx3);
+    transition: color .15s;
+    word-break: break-word;
+}
+.vf-recognized-partial { color: var(--tx2); }
+.vf-recognized-final   { color: var(--accent); }
+/* ── VF item header (trigger word + delete item btn) ── */
+.vf-item-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.vf-item-header .vf-word-input {
+    flex: 1;
+    margin: 0;
+}
+/* ── VF sound list inside an item ── */
+.vf-sounds {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.vf-sound {
+    background: var(--bg-card);
+    border-radius: 6px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.vf-sound-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.vf-no-sounds {
+    font-size: 11px;
+    color: var(--tx3);
+    text-align: center;
+    padding: 4px 0;
+}
+/* ── Add Sound to item button ── */
+.vf-add-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    background: transparent;
+    border: 1.5px dashed var(--brd);
+    border-radius: 6px;
+    color: var(--tx2);
+    font-size: 12px;
+    font-family: inherit;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: border-color .15s, color .15s, background .15s;
+}
+.vf-add-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(56,132,255,.06);
+}
+.vf-add-btn .msi { font-size: 14px; }

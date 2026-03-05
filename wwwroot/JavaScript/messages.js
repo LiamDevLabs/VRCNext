@@ -428,6 +428,14 @@ if (window.chrome?.webview) {
             case 'sfUpdate':
                 handleSfUpdate(payload);
                 break;
+            case 'vfState': handleVfState(payload); break;
+            case 'vfDevices': populateVfDevices(payload); break;
+            case 'vfItems': renderVfItems(payload); break;
+            case 'vfItemAdded': vfOnItemAdded(payload); break;
+            case 'vfSoundAdded': vfOnSoundAdded(payload); break;
+            case 'vfMeter': updateVfMeter(payload.level); break;
+            case 'vfKeyword': vfOnKeyword(payload.word); break;
+            case 'vfRecognized': vfOnRecognized(payload.text, payload.isPartial); break;
             case 'oscState':
                 handleOscState(payload);
                 break;
