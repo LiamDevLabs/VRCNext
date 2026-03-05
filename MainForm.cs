@@ -2071,7 +2071,8 @@ public class MainForm : Form
                 case "vfGetDevices":
                     {
                         var devices = VoiceFightService.GetInputDevices();
-                        SendToJS("vfDevices", new { devices, savedIndex = _vfSettings.InputDeviceIndex, stopWord = _vfSettings.StopWord, muteTalk = _vfSettings.MuteTalk });
+                        var outputDevices = VoiceFightService.GetOutputDevices();
+                        SendToJS("vfDevices", new { devices, savedIndex = _vfSettings.InputDeviceIndex, outputDevices, savedOutputIndex = _vfSettings.OutputDeviceIndex, stopWord = _vfSettings.StopWord, muteTalk = _vfSettings.MuteTalk });
                     }
                     break;
 
@@ -2082,7 +2083,9 @@ public class MainForm : Form
                 case "vfStart":
                     {
                         int devIdx = msg["deviceIndex"]?.Value<int>() ?? 0;
+                        int outIdx = msg["outputDeviceIndex"]?.Value<int>() ?? _vfSettings.OutputDeviceIndex;
                         _vfSettings.InputDeviceIndex = devIdx;
+                        _vfSettings.OutputDeviceIndex = outIdx;
                         _vfSettings.Save();
 
                         _voiceFight?.Dispose();
@@ -2097,7 +2100,7 @@ public class MainForm : Form
                         };
                         _voiceFight.SetKeywords(_vfSettings.Items);
                         _voiceFight.SetStopWord(_vfSettings.StopWord);
-                        _voiceFight.Start(devIdx);
+                        _voiceFight.Start(devIdx, outIdx);
                         if (!_uptimeTimer.Enabled) _uptimeTimer.Start();
                         SendToJS("vfState", new { running = true });
                     }
@@ -2313,7 +2316,20 @@ public class MainForm : Form
                         if (_voiceFight?.IsRunning == true)
                         {
                             _voiceFight.Stop();
-                            _voiceFight.Start(devIdx);
+                            _voiceFight.Start(devIdx, _vfSettings.OutputDeviceIndex);
+                        }
+                    }
+                    break;
+
+                case "vfSetOutputDevice":
+                    {
+                        int outIdx = msg["deviceIndex"]?.Value<int>() ?? -1;
+                        _vfSettings.OutputDeviceIndex = outIdx;
+                        _vfSettings.Save();
+                        if (_voiceFight?.IsRunning == true)
+                        {
+                            _voiceFight.Stop();
+                            _voiceFight.Start(_vfSettings.InputDeviceIndex, outIdx);
                         }
                     }
                     break;

@@ -59,6 +59,7 @@ public sealed class VoiceFightService : IDisposable
 
     // Playback
     private WaveOutEvent? _waveOut;
+    private int _outputDeviceIndex = -1;
     private readonly object _playLock = new();
 
     // Vosk
@@ -77,6 +78,15 @@ public sealed class VoiceFightService : IDisposable
         return names;
     }
 
+    public static string[] GetOutputDevices()
+    {
+        int count = WaveOut.DeviceCount;
+        var names = new string[count];
+        for (int i = 0; i < count; i++)
+            names[i] = WaveOut.GetCapabilities(i).ProductName;
+        return names;
+    }
+
     public static TimeSpan GetDuration(string path)
     {
         try
@@ -89,14 +99,15 @@ public sealed class VoiceFightService : IDisposable
         catch { return TimeSpan.Zero; }
     }
 
-    public void Start(int deviceIndex)
+    public void Start(int deviceIndex, int outputDeviceIndex = -1)
     {
         Stop();
 
         LoadBlockList();
         EnsureModel();
 
-        _waveOut = new WaveOutEvent();
+        _outputDeviceIndex = outputDeviceIndex;
+        _waveOut = new WaveOutEvent { DeviceNumber = _outputDeviceIndex };
 
         _waveIn = new WaveInEvent
         {
@@ -327,8 +338,8 @@ public sealed class VoiceFightService : IDisposable
         {
             if (_waveOut == null) return;
 
-            try { _waveOut.Stop(); _waveOut.Dispose(); _waveOut = new WaveOutEvent(); }
-            catch { _waveOut = new WaveOutEvent(); }
+            try { _waveOut.Stop(); _waveOut.Dispose(); _waveOut = new WaveOutEvent { DeviceNumber = _outputDeviceIndex }; }
+            catch { _waveOut = new WaveOutEvent { DeviceNumber = _outputDeviceIndex }; }
 
             if (!File.Exists(StopSoundPath)) return;
             try
@@ -424,9 +435,9 @@ public sealed class VoiceFightService : IDisposable
             {
                 _waveOut.Stop();
                 _waveOut.Dispose();
-                _waveOut = new WaveOutEvent();
+                _waveOut = new WaveOutEvent { DeviceNumber = _outputDeviceIndex };
             }
-            catch { _waveOut = new WaveOutEvent(); }
+            catch { _waveOut = new WaveOutEvent { DeviceNumber = _outputDeviceIndex }; }
 
             try
             {

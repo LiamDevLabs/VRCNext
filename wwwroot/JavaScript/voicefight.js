@@ -34,7 +34,9 @@ function vfConnect() {
     } else {
         const sel = document.getElementById('vfDeviceSelect');
         const deviceIndex = sel ? parseInt(sel.value) : 0;
-        sendToCS({ action: 'vfStart', deviceIndex });
+        const outSel = document.getElementById('vfOutputDeviceSelect');
+        const outputDeviceIndex = outSel ? parseInt(outSel.value) : -1;
+        sendToCS({ action: 'vfStart', deviceIndex, outputDeviceIndex });
     }
 }
 
@@ -48,17 +50,39 @@ function populateVfDevices(p) {
     if (devices.length === 0) {
         sel.innerHTML = '<option value="0">No microphone found</option>';
         if (sel._vnRefresh) sel._vnRefresh();
-        return;
+    } else {
+        const targetIndex = Math.min(p.savedIndex ?? 0, devices.length - 1);
+        devices.forEach((name, i) => {
+            const opt = document.createElement('option');
+            opt.value = String(i);
+            opt.textContent = name;
+            sel.appendChild(opt);
+        });
+        sel.selectedIndex = targetIndex;
+        if (sel._vnRefresh) sel._vnRefresh();
     }
-    const targetIndex = Math.min(p.savedIndex ?? 0, devices.length - 1);
-    devices.forEach((name, i) => {
-        const opt = document.createElement('option');
-        opt.value = String(i);
-        opt.textContent = name;
-        sel.appendChild(opt);
-    });
-    sel.selectedIndex = targetIndex;
-    if (sel._vnRefresh) sel._vnRefresh();
+
+    const outSel = document.getElementById('vfOutputDeviceSelect');
+    if (outSel) {
+        outSel.innerHTML = '';
+        const outputDevices = p.outputDevices || [];
+        // -1 = Windows default (WAVE_MAPPER)
+        const defOpt = document.createElement('option');
+        defOpt.value = '-1';
+        defOpt.textContent = 'Windows Default';
+        outSel.appendChild(defOpt);
+        outputDevices.forEach((name, i) => {
+            const opt = document.createElement('option');
+            opt.value = String(i);
+            opt.textContent = name;
+            outSel.appendChild(opt);
+        });
+        const savedOut = p.savedOutputIndex ?? -1;
+        outSel.value = String(savedOut);
+        if (outSel.value === '') outSel.selectedIndex = 0; // fallback
+        if (outSel._vnRefresh) outSel._vnRefresh();
+    }
+
     const stopInput = document.getElementById('vfStopWordInput');
     if (stopInput && p.stopWord != null) stopInput.value = p.stopWord;
     const muteTalkChk = document.getElementById('vfMuteTalkToggle');
@@ -72,6 +96,11 @@ function vfSetMuteTalk(enabled) {
 function vfSetInputDevice(val) {
     const idx = parseInt(val) || 0;
     sendToCS({ action: 'vfSetInputDevice', deviceIndex: idx });
+}
+
+function vfSetOutputDevice(val) {
+    const idx = parseInt(val);
+    sendToCS({ action: 'vfSetOutputDevice', deviceIndex: isNaN(idx) ? -1 : idx });
 }
 
 // ── Meter ──────────────────────────────────────────────────────────────────
