@@ -454,7 +454,7 @@ public partial class MainForm
     {
         if (!_vrcApi.IsLoggedIn) return;
 
-        // Disk cache → instant (FFC disk cache, no in-memory store)
+        // Disk cache → serve instantly, then refresh in background (deduplicated per userId)
         var diskCached = _settings.FfcEnabled ? _cache.LoadRaw(CacheHandler.KeyUserProfile(userId)) : null;
         if (diskCached is JObject diskProfile)
         {
@@ -475,10 +475,32 @@ public partial class MainForm
             diskProfile["travelingToLocation"] = "";
             diskProfile["state"]               = "";
             SendToJS("vrcFriendDetail", diskProfile);
+
+            // Background refresh — at most one per userId at a time
+            bool startRefresh;
+            lock (_profileRefreshInFlight) startRefresh = _profileRefreshInFlight.Add(userId);
+            if (startRefresh)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var fresh = await BuildUserDetailPayloadAsync(userId, fetchNote: false);
+                        if (fresh == null) return;
+                        Invoke(() =>
+                        {
+                            if (_settings.FfcEnabled) _cache.Save(CacheHandler.KeyUserProfile(userId), fresh);
+                            SendToJS("vrcFriendDetail", fresh);
+                        });
+                    }
+                    catch { }
+                    finally { lock (_profileRefreshInFlight) _profileRefreshInFlight.Remove(userId); }
+                });
+            }
             return;
         }
 
-        // Cold fetch — only runs once per session when FFC has no disk entry
+        // Cold fetch — no disk cache entry yet
         try
         {
             var payload = await BuildUserDetailPayloadAsync(userId);

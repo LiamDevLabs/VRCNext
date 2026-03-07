@@ -46,6 +46,9 @@ public partial class MainForm
     private VoiceFightService? _voiceFight;
     private VoiceFightSettings _vfSettings = VoiceFightSettings.Load();
 
+    // Tracks which userIds currently have a background profile refresh in-flight (deduplication)
+    private readonly HashSet<string> _profileRefreshInFlight = new();
+
     // Library file cache: quick-scan result for pagination
     private List<LibFileEntry> _libFileCache = new();
     private int _libFileCacheTotal = 0;
