@@ -7,6 +7,17 @@ With VRCNext you can check the status of your friends, watch their profiles, see
 
 VRCNext is not a replacement for VRCX and never will be. It is a hobby project for a good-looking and useful VRChat launcher with practical features. More features may be added in the future!
 
+# I'm using Arch btw :3
+
+<img width="1913" height="1073" alt="image" src="https://github.com/user-attachments/assets/ff45122a-3fc1-42d0-b3b2-103535884680" />
+I am currently working on a Linux port while refactoring the application from WebView2 to Photino.NET. Please give me some time to finish the port.
+
+I am using CachyOS (Arch based) with KDE Plasma, so that is the only environment I can properly test on. I unfortunately do not have the time to test it on every desktop environment or window manager.
+
+However, anyone is welcome to test it and help improve the Linux port.
+
+
+
 > [!WARNING]
 > **VRCNext requires you to log in to VRChat in order to function.**  
 > VRCNext does **not** store any sensitive data and is fully open source, so you can verify this yourself in the source code. You can also build the app manually if you do not trust prebuilt `.exe` files.
