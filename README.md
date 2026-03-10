@@ -16,7 +16,8 @@ I am using CachyOS (Arch based) with KDE Plasma, so that is the only environment
 
 However, anyone is welcome to test it and help improve the Linux port.
 
-
+AI Disclaimer: The frontend (the visual interface you see) was partially created with AI assistance. AI helped with parts of the frontend, mainly CSS and JavaScript such as styling and animations, because design is not really my strength. It did not write the whole frontend. The communication between the frontend and backend, as well as the backend itself, was written entirely by a human. 
+"and yes i did use DeepL to translate from german to english because english is not my first language, so is this whole descirption translated except this part here :D"
 
 > [!WARNING]
 > **VRCNext requires you to log in to VRChat in order to function.**  
