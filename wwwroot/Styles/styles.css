@@ -102,6 +102,24 @@
 .cb-media-title,
 .fdtl-item-loc { font-size: 13px; font-weight: 600; color: var(--tx0); }
 
+/* --- Sub-Text 11px/tx3 --- */
+.fd-pi-sm-sub, .upd-status, .nc-sub, .cb-media-artist { font-size: 11px; color: var(--tx3); }
+
+/* --- Titel 16px/700/tx0 --- */
+.fd-name, .ts-stat-val { font-size: 16px; font-weight: 700; color: var(--tx0); }
+
+/* --- Titel 14px/700/tx0 --- */
+.file-list-header h3, .dash-world-name, .dp-preview-title { font-size: 14px; font-weight: 700; color: var(--tx0); }
+
+/* --- Titel 13px/700/tx0 --- */
+.vrc-profile-name, .av-name, .s-card-title { font-size: 13px; font-weight: 700; color: var(--tx0); }
+
+/* --- Name 12px/600/tx1 --- */
+.fd-world-name, .inst-item-name, .fd-group-card-name { font-size: 12px; font-weight: 600; color: var(--tx1); }
+
+/* --- Info 12px/tx1 --- */
+.notif-title, .inst-user-name, .osc-param-name { font-size: 12px; color: var(--tx1); }
+
 /* --- vrcn-flex-center: all selectors that are flex+center+center --- */
 .vrcn-flex-center,
 .logo-icon,
@@ -923,11 +941,6 @@ body {
     align-items: center;
 }
 
-.file-list-header h3 {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--tx0);
-}
 
 .file-table {
     margin-top: 12px;
@@ -1758,11 +1771,6 @@ body {
 }
 
 
-.vrc-profile-name {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--tx0);
-}
 
 .vrc-profile-status {
     font-size: 10px;
@@ -2045,11 +2053,6 @@ body {
     flex-shrink: 0;
 }
 
-.fd-name {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--tx0);
-}
 
 .fd-status {
     font-size: 11px;
@@ -2306,11 +2309,6 @@ body {
     gap: 6px;
 }
 
-.fd-pi-sm-sub {
-    font-size: 11px;
-    color: var(--tx3);
-}
-
 .fd-pi-sm-badge {
     font-size: 9px;
     color: var(--ok);
@@ -2517,11 +2515,6 @@ body {
     padding: 12px 14px;
 }
 
-.dash-world-name {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--tx0);
-}
 
 .dash-world-meta {
     margin-top: 6px;
@@ -2757,11 +2750,6 @@ body {
     padding: 10px 12px 12px;
 }
 
-.av-name {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--tx0);
-}
 
 .av-author {
     font-size: 11px;
@@ -2868,11 +2856,6 @@ body {
     padding: 10px 12px 12px;
 }
 
-.s-card-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--tx0);
-}
 
 .s-card-sub {
     font-size: 11px;
@@ -3098,11 +3081,6 @@ body {
 .fd-world-info {
     padding: 6px 8px 8px;
 }
-.fd-world-name {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--tx1);
-}
 .fd-world-desc {
     font-size: 10px;
     color: var(--tx3);
@@ -3204,11 +3182,6 @@ body {
     margin-left: auto;
     flex-shrink: 0;
 }
-.inst-item-name {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--tx1);
-}
 .inst-item-meta {
     display: flex;
     align-items: center;
@@ -3256,11 +3229,6 @@ body {
 }
 
 
-.fd-group-card-name {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--tx1);
-}
 
 .fd-group-card-meta {
     font-size: 10px;
@@ -3630,11 +3598,6 @@ body {
     transition: width .3s ease;
 }
 
-.upd-status {
-    font-size: 11px;
-    color: var(--tx3);
-}
-
 .notif-panel {
     position: absolute;
     top: 50px;
@@ -3688,11 +3651,6 @@ body {
     margin-top: 2px;
 }
 
-
-.notif-title {
-    font-size: 12px;
-    color: var(--tx1);
-}
 
 .notif-msg {
     font-size: 11px;
@@ -3796,10 +3754,6 @@ body {
 .nc-title span {
     color: var(--tx2);
     font-weight: 400;
-}
-.nc-sub {
-    font-size: 11px;
-    color: var(--tx3);
 }
 .nc-close-btn {
     background: none;
@@ -3932,11 +3886,6 @@ body {
     background-position: center;
     background-color: var(--bg-input);
     flex-shrink: 0;
-}
-
-.inst-user-name {
-    font-size: 12px;
-    color: var(--tx1);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -4103,11 +4052,6 @@ body {
 }
 
 
-
-.cb-media-artist {
-    font-size: 11px;
-    color: var(--tx3);
-}
 
 .cb-progress-bar {
     height: 3px;
@@ -4427,10 +4371,6 @@ body {
     flex: 1;
 }
 
-.osc-param-name {
-    font-size: 12px;
-    color: var(--tx1);
-}
 .osc-ctrl {
     display: flex;
     align-items: center;
@@ -6039,11 +5979,6 @@ div.vn-select {
     margin-bottom: 2px;
 }
 
-.ts-stat-val {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--tx0);
-}
 
 .ts-stat-label {
     font-size: 10px;
@@ -6827,11 +6762,6 @@ div.vn-select {
     gap: 3px;
     padding-top: 4px;
     min-width: 0;
-}
-.dp-preview-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--tx0);
 }
 .dp-preview-state {
     font-size: 12px;
