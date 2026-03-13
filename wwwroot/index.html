@@ -34,6 +34,7 @@
                     <button class="nav-btn nav-sub" onclick="showTab(16)"><span class="ni msi">schedule</span><span class="nl">Time Spent</span></button>
                     <button class="nav-btn nav-sub" data-windows-only onclick="showTab(18)"><span class="ni msi">mic</span><span class="nl">Voice Fight</span></button>
                     <button class="nav-btn nav-sub" onclick="showTab(19)"><span class="ni msi">sensors</span><span class="nl">Discord Presence</span></button>
+                    <button class="nav-btn nav-sub" data-windows-only onclick="showTab(20)"><span class="ni msi">watch</span><span class="nl">VR Overlay</span><span class="sf-dot offline nl" id="badgeVro" style="margin-left:auto;margin-right:4px;width:7px;height:7px;flex-shrink:0;"></span></button>
                 </div>
             </div>
             <button class="nav-btn" onclick="showTab(9)"><span class="ni msi">settings</span><span class="nl">Settings</span></button>
@@ -948,6 +949,179 @@
                     </div>
                 </div>
             </div>
+            <!-- Tab 20: VR Wrist Overlay -->
+            <div class="tab" id="tab20" data-windows-only>
+                <div class="sf-layout">
+
+                    <!-- Status card -->
+                    <div class="sf-card sf-status-card">
+                        <div class="sf-status-row">
+                            <div class="sf-status">
+                                <span class="sf-dot offline" id="vroDot"></span>
+                                <span id="vroStatusText">Not connected</span>
+                            </div>
+                            <button class="vrcn-button" id="vroConnBtn" onclick="vroConnect()">
+                                <span class="msi" style="font-size:16px;">link</span> Connect
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Overlay controls -->
+                    <div class="sf-card" id="vroControlCard" style="display:none;">
+                        <div class="sf-card-header"><span class="msi">visibility</span> Overlay Control</div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="vrcn-button" id="vroShowBtn" onclick="vroToggleVisibility()" disabled style="flex:1;justify-content:center;min-width:120px;">
+                                <span class="msi" id="vroVisIcon" style="font-size:16px;">visibility</span>
+                                <span id="vroVisText">Show Overlay</span>
+                            </button>
+                        </div>
+                        <div style="margin-top:10px;" class="vro-ctrl-btns">
+                            <div class="sf-ctrl" id="vroCtrlL"><span class="msi" style="font-size:14px;">back_hand</span> Left</div>
+                            <div class="sf-ctrl" id="vroCtrlR"><span class="msi" style="font-size:14px;">front_hand</span> Right</div>
+                        </div>
+                    </div>
+
+                    <!-- Launch -->
+                    <div class="sf-card">
+                        <div class="sf-card-header"><span class="msi">power_settings_new</span> Launch</div>
+                        <div class="sf-toggle-row"><span>Start when launching VRCNext</span><label class="toggle"><input type="checkbox" id="setVroAutoStart" onchange="vroAutoSaveSettings()"><div class="toggle-track"><div class="toggle-knob"></div></div></label></div>
+                    </div>
+
+                    <!-- Attachment -->
+                    <div class="sf-card">
+                        <div class="sf-card-header"><span class="msi">back_hand</span> Attachment</div>
+                        <div class="vro-setting-row">
+                            <label>Hand</label>
+                            <select id="vroAttachLeft" class="vrcn-select" onchange="vroAutoSave()">
+                                <option value="left">Left</option>
+                                <option value="right">Right</option>
+                            </select>
+                        </div>
+                        <div class="vro-setting-row">
+                            <label>Position</label>
+                            <select id="vroAttachPart" class="vrcn-select" onchange="vroAutoSave()">
+                                <option value="hand">Hand / Controller</option>
+                                <option value="arm">Wrist / Forearm</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Transform -->
+                    <div class="sf-card">
+                        <div class="sf-card-header"><span class="msi">open_with</span> Transform</div>
+                        <div class="sf-section-label">Position (meters)</div>
+                        <div class="vro-transform-grid">
+                            <div class="vro-axis-row">
+                                <span class="vro-axis-lbl vro-x">X</span>
+                                <input type="range" id="vroPosX" min="-0.3" max="0.3" step="0.005" value="0" class="vro-slider" oninput="vroUpdateTransformLabel('vroPosX');vroAutoSave()">
+                                <span class="vro-axis-val" id="vroPosXVal">0.00</span>
+                            </div>
+                            <div class="vro-axis-row">
+                                <span class="vro-axis-lbl vro-y">Y</span>
+                                <input type="range" id="vroPosY" min="-0.2" max="0.3" step="0.005" value="0.07" class="vro-slider" oninput="vroUpdateTransformLabel('vroPosY');vroAutoSave()">
+                                <span class="vro-axis-val" id="vroPosYVal">0.07</span>
+                            </div>
+                            <div class="vro-axis-row">
+                                <span class="vro-axis-lbl vro-z">Z</span>
+                                <input type="range" id="vroPosZ" min="-0.3" max="0.2" step="0.005" value="-0.05" class="vro-slider" oninput="vroUpdateTransformLabel('vroPosZ');vroAutoSave()">
+                                <span class="vro-axis-val" id="vroPosZVal">-0.05</span>
+                            </div>
+                        </div>
+                        <div class="sf-section-label" style="margin-top:8px;">Rotation (degrees)</div>
+                        <div class="vro-transform-grid">
+                            <div class="vro-axis-row">
+                                <span class="vro-axis-lbl vro-x">X</span>
+                                <input type="range" id="vroRotX" min="-180" max="180" step="1" value="-80" class="vro-slider" oninput="vroUpdateTransformLabel('vroRotX');vroAutoSave()">
+                                <span class="vro-axis-val" id="vroRotXVal">-80</span>
+                            </div>
+                            <div class="vro-axis-row">
+                                <span class="vro-axis-lbl vro-y">Y</span>
+                                <input type="range" id="vroRotY" min="-180" max="180" step="1" value="0" class="vro-slider" oninput="vroUpdateTransformLabel('vroRotY');vroAutoSave()">
+                                <span class="vro-axis-val" id="vroRotYVal">0</span>
+                            </div>
+                            <div class="vro-axis-row">
+                                <span class="vro-axis-lbl vro-z">Z</span>
+                                <input type="range" id="vroRotZ" min="-180" max="180" step="1" value="0" class="vro-slider" oninput="vroUpdateTransformLabel('vroRotZ');vroAutoSave()">
+                                <span class="vro-axis-val" id="vroRotZVal">0</span>
+                            </div>
+                        </div>
+                        <div class="sf-section-label" style="margin-top:8px;">Overlay Width</div>
+                        <div class="vro-axis-row">
+                            <span class="vro-axis-lbl" style="width:24px;color:var(--tx2);">W</span>
+                            <input type="range" id="vroWidth" min="0.05" max="0.5" step="0.01" value="0.22" class="vro-slider" oninput="vroUpdateTransformLabel('vroWidth');vroAutoSave()">
+                            <span class="vro-axis-val" id="vroWidthVal">0.22</span>
+                        </div>
+                    </div>
+
+                    <!-- Keybind -->
+                    <div class="sf-card">
+                        <div class="sf-card-header"><span class="msi">gamepad</span> Toggle Keybind</div>
+
+                        <!-- Controller button visual -->
+                        <div id="vroControllerVisual" class="vro-controller-visual">
+                            <div class="vro-ctrl-diagram">
+                                <div class="vro-ctrl-body">
+                                    <!-- Left side -->
+                                    <div class="vro-ctrl-left">
+                                        <div class="vro-btn" data-btn-id="2" title="Grip">Grip</div>
+                                        <div class="vro-btn" data-btn-id="32" title="Thumbstick">Stick</div>
+                                        <div class="vro-btn" data-btn-id="33" title="Trigger">Trig.</div>
+                                    </div>
+                                    <!-- Center -->
+                                    <div class="vro-ctrl-center">
+                                        <div class="vro-btn" data-btn-id="0" title="System">Sys</div>
+                                        <div class="vro-btn" data-btn-id="1" title="Menu / B">Menu</div>
+                                    </div>
+                                    <!-- Right side -->
+                                    <div class="vro-ctrl-right">
+                                        <div class="vro-btn" data-btn-id="7" title="A Button">A</div>
+                                        <div class="vro-btn" data-btn-id="2" title="Grip">Grip</div>
+                                        <div class="vro-btn" data-btn-id="33" title="Trigger">Trig.</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="vro-ctrl-legend">Buttons highlighted <span class="vro-btn-demo">in blue</span> are bound</div>
+                        </div>
+
+                        <!-- Current keybind display -->
+                        <div class="vro-keybind-row">
+                            <div id="vroKeybindDisplay" class="vro-keybind-display">
+                                <span style="color:var(--tx3);font-style:italic;">No keybind set</span>
+                            </div>
+                            <button class="vrcn-button" onclick="vroClearKeybind()" title="Clear keybind" style="padding:4px 8px;">
+                                <span class="msi" style="font-size:14px;">close</span>
+                            </button>
+                        </div>
+
+                        <!-- Record buttons -->
+                        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="vrcn-button" id="vroRecordBtn" onclick="vroStartRecording()"
+                                style="flex:1;justify-content:center;">
+                                <span class="msi" style="font-size:15px;">radio_button_checked</span> Record Keybind
+                            </button>
+                            <button class="vrcn-button" id="vroCancelRecordBtn" onclick="vroCancelRecording()"
+                                style="flex:1;justify-content:center;display:none;border-color:var(--warn);">
+                                <span class="msi" style="font-size:15px;">stop_circle</span> Cancel
+                            </button>
+                        </div>
+                        <div id="vroRecordHint" style="margin-top:6px;font-size:11px;color:var(--tx3);">
+                            Hold 2–3 controller buttons together to record a combo.
+                        </div>
+                    </div>
+
+                    <!-- Info card -->
+                    <div class="sf-card">
+                        <div class="sf-card-header"><span class="msi">info</span> How it works</div>
+                        <div style="font-size:12px;color:var(--tx2);line-height:1.7;">
+                            Creates a small overlay attached to your VR controller / wrist.<br>
+                            Shows your latest friend notifications and currently playing music.<br>
+                            You can interact with it directly in VR using the laser pointer.<br><br>
+                            <strong style="color:var(--tx1);">SteamVR must be running</strong> before connecting.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -1090,6 +1264,7 @@
     <script src="JavaScript/calendar.js"></script>
     <script src="JavaScript/voicefight.js"></script>
     <script src="JavaScript/discord.js"></script>
+    <script src="JavaScript/vroverlay.js"></script>
     <script src="JavaScript/init.js"></script>
 </body>
 </html>

@@ -58,6 +58,7 @@ namespace VRCNext.Services
         private static readonly ulong GRIP_MASK = 1UL << (int)EVRButtonId.k_EButton_Grip;
         private static readonly ulong STICK_CLICK_MASK = 1UL << (int)EVRButtonId.k_EButton_Axis0;
         private static readonly ulong A_BUTTON_MASK = 1UL << (int)EVRButtonId.k_EButton_A;
+        private bool _ownedInit = false;
 
         public SteamVRService(Action<string> log)
         {
@@ -73,25 +74,36 @@ namespace VRCNext.Services
 
             try
             {
-                var err = EVRInitError.None;
-                _vrSystem = OpenVR.Init(ref err, EVRApplicationType.VRApplication_Overlay);
-                if (err != EVRInitError.None)
+                if (OpenVR.System != null)
                 {
-                    _log($"[SteamVR] Overlay init: {err}, fallback Background...");
-                    try { OpenVR.Shutdown(); } catch { }
-                    err = EVRInitError.None;
-                    _vrSystem = OpenVR.Init(ref err, EVRApplicationType.VRApplication_Background);
-                    if (err != EVRInitError.None)
-                    {
-                        LastError = $"OpenVR: {err}";
-                        _log($"[SteamVR] {LastError}");
-                        return false;
-                    }
-                    _log("[SteamVR] Init: Background");
+                    // OpenVR already initialized by another service (e.g., VROverlayService); reuse it
+                    _vrSystem = OpenVR.System;
+                    _ownedInit = false;
+                    _log("[SteamVR] Reusing existing OpenVR session");
                 }
                 else
                 {
-                    _log("[SteamVR] Init: Overlay");
+                    var err = EVRInitError.None;
+                    _vrSystem = OpenVR.Init(ref err, EVRApplicationType.VRApplication_Overlay);
+                    if (err != EVRInitError.None)
+                    {
+                        _log($"[SteamVR] Overlay init: {err}, fallback Background...");
+                        try { OpenVR.Shutdown(); } catch { }
+                        err = EVRInitError.None;
+                        _vrSystem = OpenVR.Init(ref err, EVRApplicationType.VRApplication_Background);
+                        if (err != EVRInitError.None)
+                        {
+                            LastError = $"OpenVR: {err}";
+                            _log($"[SteamVR] {LastError}");
+                            return false;
+                        }
+                        _log("[SteamVR] Init: Background");
+                    }
+                    else
+                    {
+                        _log("[SteamVR] Init: Overlay");
+                    }
+                    _ownedInit = true;
                 }
 
                 if (OpenVR.Overlay != null)
@@ -203,7 +215,11 @@ namespace VRCNext.Services
                 _overlayHandle = 0;
             }
 
-            try { OpenVR.Shutdown(); } catch { }
+            if (_ownedInit)
+            {
+                try { OpenVR.Shutdown(); } catch { }
+                _ownedInit = false;
+            }
 
             IsConnected = false;
             IsDragging = false;

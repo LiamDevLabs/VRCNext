@@ -6919,3 +6919,155 @@ div.vn-select {
     gap: 3px;
     align-items: center;
 }
+
+/* ── VR Wrist Overlay ──────────────────────────────────────────────────────── */
+.vro-setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 0;
+    font-size: 12px;
+    color: var(--tx2);
+}
+.vro-setting-row label { color: var(--tx1); min-width: 60px; }
+.vrcn-select {
+    background: var(--bg-hover);
+    border: 1px solid var(--bdr);
+    border-radius: 6px;
+    color: var(--tx1);
+    font-size: 12px;
+    padding: 4px 8px;
+    cursor: pointer;
+    outline: none;
+    min-width: 140px;
+}
+.vrcn-select:hover { border-color: var(--accent); }
+
+/* Transform sliders */
+.vro-transform-grid { display: flex; flex-direction: column; gap: 4px; }
+.vro-axis-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.vro-axis-lbl {
+    font-size: 11px;
+    font-weight: 700;
+    width: 18px;
+    text-align: center;
+    letter-spacing: .03em;
+}
+.vro-x { color: #f87171; }
+.vro-y { color: #4ade80; }
+.vro-z { color: #60a5fa; }
+.vro-slider {
+    flex: 1;
+    accent-color: var(--accent);
+    height: 3px;
+}
+.vro-axis-val {
+    font-size: 11px;
+    color: var(--tx2);
+    min-width: 36px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Controller button visual */
+.vro-controller-visual {
+    margin: 10px 0 4px;
+}
+.vro-ctrl-diagram {
+    background: var(--bg-hover);
+    border-radius: 12px;
+    border: 1px solid var(--bdr);
+    padding: 12px;
+    display: flex;
+    justify-content: center;
+}
+.vro-ctrl-body {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+.vro-ctrl-left,
+.vro-ctrl-right,
+.vro-ctrl-center {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+}
+.vro-btn {
+    background: var(--bg2);
+    border: 1.5px solid var(--bdr);
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 11px;
+    color: var(--tx2);
+    cursor: default;
+    transition: background .15s, border-color .15s, color .15s;
+    white-space: nowrap;
+}
+.vro-btn.active {
+    background: color-mix(in srgb, var(--accent) 25%, transparent);
+    border-color: var(--accent);
+    color: var(--accent-lt);
+    font-weight: 600;
+}
+.vro-btn-demo {
+    background: color-mix(in srgb, var(--accent) 25%, transparent);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 10px;
+    color: var(--accent-lt);
+}
+.vro-ctrl-legend {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--tx3);
+    text-align: center;
+}
+
+/* Keybind display */
+.vro-keybind-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+.vro-keybind-display {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-height: 28px;
+    background: var(--bg-hover);
+    border-radius: 8px;
+    border: 1px solid var(--bdr);
+    padding: 4px 8px;
+}
+.vro-keybind-chip {
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
+    border: 1px solid var(--accent);
+    border-radius: 5px;
+    padding: 2px 7px;
+    font-size: 11px;
+    color: var(--accent-lt);
+    font-weight: 600;
+}
+.vro-keybind-plus {
+    font-size: 12px;
+    color: var(--tx3);
+    font-weight: 700;
+}
+
+/* Controls row under status card */
+.vro-ctrl-btns {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}

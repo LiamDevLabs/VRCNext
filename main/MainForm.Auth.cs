@@ -266,6 +266,13 @@ public partial class MainForm
             _settings.MinimizeToTray = data["minimizeToTray"]?.Value<bool>() ?? false;
             _settings.Theme = data["theme"]?.ToString() ?? "midnight";
             _settings.SpecialTheme = data["specialTheme"]?.ToString() ?? "";
+#if WINDOWS
+            // Only apply named palette when auto color is NOT active.
+            // When auto color is on, applyColors() in JS already pushes the
+            // resolved colors via overlayThemeColors — don't override those.
+            if (_settings.SpecialTheme != "auto")
+                _vrOverlay?.SetTheme(_settings.Theme);
+#endif
             _settings.AutoColorAccuracy = data["autoColorAccuracy"]?.Value<int>() ?? 50;
 
             var dashBg = data["dashBgPath"]?.ToString();

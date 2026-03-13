@@ -125,6 +125,17 @@ function saveSettings() {
             chatboxAutoStart: document.getElementById('setCbAutoStart').checked,
             sfAutoStart: document.getElementById('setSfAutoStart').checked,
             discordPresenceAutoStart: document.getElementById('setDpAutoStart')?.checked ?? false,
+            vroAutoStart:    document.getElementById('setVroAutoStart')?.checked ?? false,
+            vroAttachLeft:   document.getElementById('vroAttachLeft')?.value === 'left',
+            vroAttachHand:   document.getElementById('vroAttachPart')?.value === 'hand',
+            vroPosX:  parseFloat(document.getElementById('vroPosX')?.value) || 0,
+            vroPosY:  parseFloat(document.getElementById('vroPosY')?.value) || 0.07,
+            vroPosZ:  parseFloat(document.getElementById('vroPosZ')?.value) || -0.05,
+            vroRotX:  parseFloat(document.getElementById('vroRotX')?.value) || -80,
+            vroRotY:  parseFloat(document.getElementById('vroRotY')?.value) || 0,
+            vroRotZ:  parseFloat(document.getElementById('vroRotZ')?.value) || 0,
+            vroWidth: parseFloat(document.getElementById('vroWidth')?.value) || 0.22,
+            vroKeybind: vroKeybindIds ?? [],
             dpHideJoinBtnJoinMe: document.getElementById('dpHideJoinBtn_joinme')?.checked ?? false,
             dpHideJoinBtnOnline: document.getElementById('dpHideJoinBtn_online')?.checked ?? false,
             dpHideJoinBtnAskMe:  document.getElementById('dpHideJoinBtn_askme')?.checked  ?? false,
@@ -282,10 +293,28 @@ function loadSettingsToUI(s) {
         if (el) el.checked = s[key] ?? s[key.charAt(0).toLowerCase() + key.slice(1)] ?? false;
     }
 
+    // VR Overlay settings
+    const _vroAutoStart = s.VroAutoStart ?? s.vroAutoStart ?? false;
+    vroLoadSettings({
+        vroAttachLeft: s.VroAttachLeft ?? s.vroAttachLeft ?? true,
+        vroAttachHand: s.VroAttachHand ?? s.vroAttachHand ?? true,
+        vroPosX: s.VroPosX ?? s.vroPosX ?? 0,
+        vroPosY: s.VroPosY ?? s.vroPosY ?? 0.07,
+        vroPosZ: s.VroPosZ ?? s.vroPosZ ?? -0.05,
+        vroRotX: s.VroRotX ?? s.vroRotX ?? -80,
+        vroRotY: s.VroRotY ?? s.vroRotY ?? 0,
+        vroRotZ: s.VroRotZ ?? s.vroRotZ ?? 0,
+        vroWidth: s.VroWidth ?? s.vroWidth ?? 0.22,
+        vroAutoStart: _vroAutoStart,
+        vroKeybind: s.VroKeybind ?? s.vroKeybind ?? [],
+        vroKeybindNames: s.VroKeybindNames ?? []
+    });
+
     // Trigger auto-starts if enabled
     if (_cbAutoStart && !chatboxEnabled) setTimeout(() => toggleChatbox(), 300);
     if (_sfAutoStart) setTimeout(() => sfConnect(), 400);
     if (_dpAutoStart && !_dpRunning) setTimeout(() => sendToCS({ action: 'dpStart' }), 500);
+    if (_vroAutoStart) setTimeout(() => vroConnect(), 600);
 
     // Image cache settings
     const imgCacheEnabled = s.ImgCacheEnabled ?? s.imgCacheEnabled ?? true;

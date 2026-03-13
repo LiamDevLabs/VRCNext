@@ -2196,6 +2196,19 @@ public partial class MainForm
                         _chatbox ??= new ChatboxService(s => Invoke(() => SendToJS("log", new { msg = s, color = "sec" })));
                         _chatbox.SetUpdateCallback(data => {
                             try { Invoke(() => SendToJS("chatboxUpdate", data)); } catch { }
+#if WINDOWS
+                            try
+                            {
+                                var d = Newtonsoft.Json.Linq.JObject.FromObject(data);
+                                _vrOverlay?.UpdateMediaInfo(
+                                    d["currentTitle"]?.ToString() ?? "",
+                                    d["currentArtist"]?.ToString() ?? "",
+                                    d["currentPosition"]?.Value<double>() ?? 0,
+                                    d["currentDuration"]?.Value<double>() ?? 0,
+                                    d["isPlaying"]?.Value<bool>() ?? false);
+                            }
+                            catch { }
+#endif
                         });
 
                         var enabled = msg["enabled"]?.Value<bool>() ?? false;
@@ -2215,6 +2228,7 @@ public partial class MainForm
                         _chatbox.ApplyConfig(enabled, showTime, showMedia, showPlaytime,
                             showCustomText, showSystemStats, showAfk, afkMessage,
                             suppressSound, timeFormat, separator, intervalMs, customLines);
+                        UpdateVroToolStates();
 
                         // Persist chatbox settings
                         _settings.CbShowTime = showTime;
@@ -2235,6 +2249,7 @@ public partial class MainForm
 
                 case "chatboxStop":
                     _chatbox?.Stop();
+                    UpdateVroToolStates();
                     break;
 
                 // Space Flight
@@ -2250,12 +2265,15 @@ public partial class MainForm
                                 _settings.SfLeftHand, _settings.SfRightHand, _settings.SfUseGrip);
                             _steamVR.StartPolling();
                         }
+                        UpdateVroToolStates();
                     }
                     break;
                 case "sfDisconnect":
                     _steamVR?.Disconnect();
+                    _steamVR = null;
                     SendToJS("sfUpdate", new { connected = false, dragging = false, offsetX = 0, offsetY = 0, offsetZ = 0,
                         leftController = false, rightController = false, error = (string?)null });
+                    UpdateVroToolStates();
                     break;
                 case "sfReset":
                     _steamVR?.ResetOffset();
@@ -2308,6 +2326,7 @@ public partial class MainForm
                         _voiceFight.SetStopWord(_vfSettings.StopWord);
                         _voiceFight.Start(devIdx, outIdx);
                         SendToJS("vfState", new { running = true });
+                        UpdateVroToolStates();
                     }
                     break;
 
@@ -2315,6 +2334,7 @@ public partial class MainForm
                     _voiceFight?.Stop();
                     SendToJS("vfState", new { running = false });
                     SendToJS("vfMeter", new { level = 0f });
+                    UpdateVroToolStates();
                     break;
 
                 case "vfAddSound":
@@ -3835,6 +3855,7 @@ public partial class MainForm
                         bool ok = _discordPresence.Connect();
                         SendToJS("dpState", new { running = ok });
                         if (ok) PushDiscordPresence();
+                        UpdateVroToolStates();
                     }
                     break;
 
@@ -3843,11 +3864,130 @@ public partial class MainForm
                     _discordPresence?.Dispose();
                     _discordPresence = null;
                     SendToJS("dpState", new { running = false });
+                    UpdateVroToolStates();
                     break;
 
                 case "dpRefresh":
                     PushDiscordPresence();
                     break;
+
+#if WINDOWS
+                // ── VR Wrist Overlay ──────────────────────────────────────────
+                case "vroConnect":
+                    {
+                        _vrOverlay ??= new Services.VROverlayService(
+                            s => Invoke(() => SendToJS("log", new { msg = s, color = "sec" })));
+                        _vrOverlay.OnStateUpdate    += d => Invoke(() => SendToJS("vroState", d));
+                        _vrOverlay.OnKeybindRecorded += (ids, names) =>
+                            Invoke(() => SendToJS("vroKeybindRecorded", new { ids, names }));
+                        _vrOverlay.OnToolToggle    += idx => Invoke(() => ToggleToolFromOverlay(idx));
+                        _vrOverlay.OnJoinRequest   += (fid, loc) => Invoke(async () =>
+                        {
+                            bool ok = await _vrcApi.InviteSelfAsync(loc);
+                            SendToJS("log", new { msg = ok ? "Self-invite sent — check VRChat notifications!" : "Failed to send self-invite.", color = ok ? "ok" : "err" });
+                        });
+
+                        // Seed with named palette as fallback; JS will push the real
+                        // (possibly auto) colors via overlayThemeColors once it receives vroState.
+                        if (_settings.SpecialTheme != "auto")
+                            _vrOverlay.SetTheme(_settings.Theme);
+                        _vrOverlay.ApplyConfig(
+                            _settings.VroAttachLeft, _settings.VroAttachHand,
+                            _settings.VroPosX, _settings.VroPosY, _settings.VroPosZ,
+                            _settings.VroRotX, _settings.VroRotY, _settings.VroRotZ,
+                            _settings.VroWidth, _settings.VroKeybind);
+
+                        bool ok = _vrOverlay.Connect();
+                        if (ok) _vrOverlay.StartPolling();
+                        UpdateVroToolStates();
+                        SendToJS("vroState", new
+                        {
+                            connected = ok,
+                            visible   = false,
+                            recording = false,
+                            keybind   = _settings.VroKeybind,
+                            keybindNames = new List<string>(),
+                            error     = ok ? null : _vrOverlay.LastError
+                        });
+                    }
+                    break;
+
+                case "overlayThemeColors":
+                {
+#if WINDOWS
+                    if (_vrOverlay != null && msg["colors"] is JObject colors)
+                    {
+                        var dict = colors.Properties()
+                            .ToDictionary(p => p.Name, p => p.Value.ToString());
+                        _vrOverlay.SetThemeColors(dict);
+                    }
+#endif
+                    break;
+                }
+
+                case "vroDisconnect":
+                    _vrOverlay?.Disconnect();
+                    _vrOverlay?.Dispose();
+                    _vrOverlay = null;
+                    SendToJS("vroState", new { connected = false, visible = false, recording = false });
+                    break;
+
+                case "vroShow":
+                    _vrOverlay?.Show();
+                    break;
+
+                case "vroHide":
+                    _vrOverlay?.Hide();
+                    break;
+
+                case "vroToggle":
+                    _vrOverlay?.Toggle();
+                    break;
+
+                case "vroConfig":
+                    {
+                        bool left   = msg["attachLeft"]?.Value<bool>() ?? true;
+                        bool hand   = msg["attachHand"]?.Value<bool>() ?? true;
+                        float px    = msg["posX"]?.Value<float>() ?? 0f;
+                        float py    = msg["posY"]?.Value<float>() ?? 0.07f;
+                        float pz    = msg["posZ"]?.Value<float>() ?? -0.05f;
+                        float rx    = msg["rotX"]?.Value<float>() ?? -80f;
+                        float ry    = msg["rotY"]?.Value<float>() ?? 0f;
+                        float rz    = msg["rotZ"]?.Value<float>() ?? 0f;
+                        float width = msg["width"]?.Value<float>() ?? 0.22f;
+                        var kb      = msg["keybind"]?.ToObject<List<uint>>() ?? new();
+
+                        _settings.VroAttachLeft = left;
+                        _settings.VroAttachHand = hand;
+                        _settings.VroPosX = px; _settings.VroPosY = py; _settings.VroPosZ = pz;
+                        _settings.VroRotX = rx; _settings.VroRotY = ry; _settings.VroRotZ = rz;
+                        _settings.VroWidth = width;
+                        _settings.VroKeybind = kb;
+                        _settings.Save();
+
+                        _vrOverlay?.ApplyConfig(left, hand, px, py, pz, rx, ry, rz, width, kb);
+                    }
+                    break;
+
+                case "vroAutoSave":
+                    {
+                        _settings.VroAutoStart = msg["autoStart"]?.Value<bool>() ?? false;
+                        _settings.Save();
+                    }
+                    break;
+
+                case "vroRecordKeybind":
+                    _vrOverlay?.StartKeybindRecording();
+                    break;
+
+                case "vroCancelRecording":
+                    _vrOverlay?.StopKeybindRecording();
+                    break;
+
+                case "vroSetTab":
+                    _vrOverlay?.SetActiveTab(msg["tab"]?.Value<int>() ?? 0);
+                    break;
+#endif
             }
         }
         catch (Exception ex)

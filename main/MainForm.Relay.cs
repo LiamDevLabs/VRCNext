@@ -131,6 +131,7 @@ public partial class MainForm
         _fileWatcher.Start(folders);
         _relayRunning = true;
         _relayStart = DateTime.Now;
+        UpdateVroToolStates();
 
         SendToJS("relayState", new { running = true, streams = whs.Count });
         SendToJS("log", new { msg = "Relay started successfully", color = "ok" });
@@ -144,6 +145,7 @@ public partial class MainForm
     {
         _fileWatcher.Stop();
         _relayRunning = false;
+        UpdateVroToolStates();
 
         SendToJS("relayState", new { running = false, streams = 0 });
         SendToJS("log", new { msg = "Relay stopped", color = "warn" });
@@ -179,7 +181,7 @@ public partial class MainForm
             _vcProcess.Exited += (_, _) =>
             {
                 _vcProcess = null;
-                try { Invoke(() => SendToJS("vcState", GetVcState())); } catch { }
+                try { Invoke(() => { SendToJS("vcState", GetVcState()); UpdateVroToolStates(); }); } catch { }
             };
             SendToJS("vcState", GetVcState());
         }
@@ -191,6 +193,7 @@ public partial class MainForm
         try { _vcProcess?.Kill(entireProcessTree: true); } catch { }
         _vcProcess = null;
         SendToJS("vcState", GetVcState());
+        UpdateVroToolStates();
     }
 
     private async Task InstallVcAsync()

@@ -158,6 +158,9 @@ public partial class MainForm
         _steamVR?.Dispose();
         _voiceFight?.Dispose();
         _discordPresence?.Dispose();
+#if WINDOWS
+        _vrOverlay?.Dispose();
+#endif
         _osc?.Dispose();
         _timeline.Dispose();
         _photoPlayersStore.Dispose();
@@ -188,7 +191,169 @@ public partial class MainForm
         if (_imgCache != null)
             msg = _vrcImgUrlRegex.Replace(msg, m => $"\"{_imgCache.Get(m.Groups[1].Value)}\"");
         try { _window.SendWebMessage(msg); } catch { }
+
+#if WINDOWS
+        // Forward friend timeline events to the VR wrist overlay
+        if (type == "friendTimelineEvent" && payload != null && _vrOverlay != null)
+        {
+            try
+            {
+                var p           = Newtonsoft.Json.Linq.JObject.FromObject(payload);
+                var evType      = p["type"]?.ToString() ?? "";
+                var name        = p["friendName"]?.ToString() ?? "Friend";
+                var worldName   = p["worldName"]?.ToString() ?? "";
+                var oldValue    = p["oldValue"]?.ToString() ?? "";
+                var newValue    = p["newValue"]?.ToString() ?? "";
+                var friendImage = p["friendImage"]?.ToString() ?? "";
+                var friendId    = p["friendId"]?.ToString() ?? "";
+                var location    = p["location"]?.ToString() ?? "";
+
+                // Build event text — null means "skip this event"
+                string? evText = evType switch
+                {
+                    "friend_online"     => "Came online",
+                    "friend_offline"    => "Went offline",
+                    "friend_gps"        => $"→ {(string.IsNullOrWhiteSpace(worldName) ? "a world" : worldName)}",
+                    "friend_status"     => !string.IsNullOrEmpty(oldValue) && !string.IsNullOrEmpty(newValue)
+                                           ? $"{oldValue} → {newValue}"
+                                           : "Changed status",
+                    "friend_statusdesc" => "Changed status text",
+                    "friend_bio"        => "Updated bio",
+                    "friend_added"      => "Friend added",
+                    "friend_removed"    => "Removed you",
+                    _                   => null   // ignore unknown events (e.g. "friend_updated")
+                };
+                if (evText == null) return;
+
+                _vrOverlay.AddNotification(evType, name, evText, DateTime.Now.ToString("HH:mm"), friendImage, friendId, location);
+            }
+            catch { }
+        }
+#endif
     }
+
+#if WINDOWS
+    // ── VR Overlay tool-state sync ────────────────────────────────────────────
+
+    internal void UpdateVroToolStates()
+    {
+        if (_vrOverlay == null) return;
+        bool discord  = _discordPresence != null;
+        bool voice    = _voiceFight      != null;
+        bool ytFix    = _vcProcess       != null && !_vcProcess.HasExited;
+        bool space    = _steamVR         != null;
+        bool relay    = _relayRunning;
+        bool chatbox  = _chatbox         != null;
+        _vrOverlay.SetToolStates(discord, voice, ytFix, space, relay, chatbox);
+    }
+#else
+    internal void UpdateVroToolStates() { }
+#endif
+
+#if WINDOWS
+    // ── VR Overlay tool toggle (fired by overlay card click) ──────────────────
+
+    private void ToggleToolFromOverlay(int idx)
+    {
+        switch (idx)
+        {
+            case 0: // Discord Presence
+                if (_discordPresence != null)
+                {
+                    _discordPresence.Disconnect();
+                    _discordPresence.Dispose();
+                    _discordPresence = null;
+                    SendToJS("dpState", new { running = false });
+                }
+                else
+                {
+                    _discordPresence = new Services.DiscordPresenceService("1480822566854852762");
+                    _discordPresence.OnLog += s => Invoke(() => SendToJS("log", new { msg = s, color = "sec" }));
+                    bool ok = _discordPresence.Connect();
+                    SendToJS("dpState", new { running = ok });
+                    if (ok) PushDiscordPresence();
+                }
+                break;
+
+            case 1: // Voice Fight
+                if (_voiceFight != null)
+                {
+                    _voiceFight.Stop();
+                    _voiceFight = null;
+                    SendToJS("vfState", new { running = false });
+                    SendToJS("vfMeter", new { level = 0f });
+                }
+                else
+                {
+                    _voiceFight = new VoiceFightService();
+                    _voiceFight.OnLog += s => Invoke(() => SendToJS("log", new { msg = s, color = "sec" }));
+                    _voiceFight.OnKeywordTriggered += word => Invoke(() => SendToJS("vfKeyword", new { word }));
+                    _voiceFight.OnRecognized += (displayHtml, cleanText, isPartial) =>
+                    {
+                        Invoke(() => SendToJS("vfRecognized", new { text = displayHtml, isPartial }));
+                        if (!isPartial && _vfSettings.MuteTalk)
+                            ThreadPool.QueueUserWorkItem(_ => VfSendChatbox(cleanText));
+                    };
+                    _voiceFight.SetKeywords(_vfSettings.Items);
+                    _voiceFight.SetStopWord(_vfSettings.StopWord);
+                    _voiceFight.Start(_vfSettings.InputDeviceIndex, _vfSettings.OutputDeviceIndex);
+                    SendToJS("vfState", new { running = true });
+                }
+                break;
+
+            case 2: // YouTube Fix
+                if (_vcProcess != null && !_vcProcess.HasExited)
+                    StopVcProcess();
+                else
+                    StartVcProcess();
+                break;
+
+            case 3: // Space Flight
+                if (_steamVR != null)
+                {
+                    _steamVR.Disconnect();
+                    _steamVR = null;
+                    SendToJS("sfUpdate", new { connected = false, dragging = false,
+                        offsetX = 0, offsetY = 0, offsetZ = 0,
+                        leftController = false, rightController = false, error = (string?)null });
+                }
+                else
+                {
+                    _steamVR ??= new SteamVRService(s => Invoke(() => SendToJS("log", new { msg = s, color = "sec" })));
+                    _steamVR.SetUpdateCallback(data => { try { Invoke(() => SendToJS("sfUpdate", data)); } catch { } });
+                    if (_steamVR.Connect())
+                    {
+                        _steamVR.ApplyConfig(_settings.SfMultiplier, _settings.SfLockX, _settings.SfLockY, _settings.SfLockZ,
+                            _settings.SfLeftHand, _settings.SfRightHand, _settings.SfUseGrip);
+                        _steamVR.StartPolling();
+                    }
+                }
+                break;
+
+            case 4: // Media Relay
+                if (_relayRunning) StopRelay();
+                else               StartRelay();
+                break;
+
+            case 5: // Custom Chatbox
+                if (_chatbox != null)
+                {
+                    _chatbox.Stop();
+                    _chatbox = null;
+                }
+                else
+                {
+                    _chatbox = new ChatboxService(s => Invoke(() => SendToJS("log", new { msg = s, color = "sec" })));
+                    _chatbox.SetUpdateCallback(data => { try { Invoke(() => SendToJS("chatboxUpdate", data)); } catch { } });
+                    _chatbox.ApplyConfig(true, _settings.CbShowTime, _settings.CbShowMedia, _settings.CbShowPlaytime,
+                        _settings.CbShowCustomText, _settings.CbShowSystemStats, _settings.CbShowAfk, _settings.CbAfkMessage,
+                        _settings.CbSuppressSound, _settings.CbTimeFormat, _settings.CbSeparator, _settings.CbIntervalMs, _settings.CbCustomLines);
+                }
+                break;
+        }
+        UpdateVroToolStates();
+    }
+#endif
 
     // ── HttpListener (replaces WebView2 virtual hosts) ────────────────────────
 

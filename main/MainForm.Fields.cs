@@ -64,6 +64,11 @@ public partial class MainForm
     private DateTime _discordJoinedAt = DateTime.MinValue;
     private string   _myVrcStatus     = "active"; // updated on login + status change
 
+#if WINDOWS
+    // VR Wrist Overlay
+    private VROverlayService? _vrOverlay;
+#endif
+
     // Tracks which userIds currently have a background profile refresh in-flight (deduplication)
     private readonly HashSet<string> _profileRefreshInFlight = new();
 

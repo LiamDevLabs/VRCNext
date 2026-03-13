@@ -179,6 +179,8 @@ function applyColors(c) {
     const logoEl = document.getElementById('logoIcon');
     if (logoEl && logoEl._repaintLogo) logoEl._repaintLogo();
     document.documentElement.dispatchEvent(new Event('themechange'));
+    // Forward resolved colors to C# so the VR overlay stays in sync (including auto color)
+    try { sendToCS({ action: 'overlayThemeColors', colors: c }); } catch {}
 }
 
 function renderThemeChips() {

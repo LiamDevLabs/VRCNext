@@ -622,6 +622,12 @@ window.external.receiveMessage(rawMsg => {
         case 'vrcxImportError':
             vrcxShowError(payload?.error);
             break;
+        case 'vroState':
+            handleVroState(payload);
+            break;
+        case 'vroKeybindRecorded':
+            handleVroKeybindRecorded(payload);
+            break;
     }
 });
 sendToCS({ action: 'ready' });

@@ -274,6 +274,19 @@ public class AppSettings
     public bool ChatboxAutoStart { get; set; }
     public bool SfAutoStart { get; set; }
     public bool DiscordPresenceAutoStart { get; set; }
+    public bool VroAutoStart { get; set; }
+
+    // VR Wrist Overlay settings
+    public bool    VroAttachLeft  { get; set; } = true;
+    public bool    VroAttachHand  { get; set; } = true;
+    public float   VroPosX        { get; set; } = 0.0f;
+    public float   VroPosY        { get; set; } = 0.07f;
+    public float   VroPosZ        { get; set; } = -0.05f;
+    public float   VroRotX        { get; set; } = -80f;
+    public float   VroRotY        { get; set; } = 0f;
+    public float   VroRotZ        { get; set; } = 0f;
+    public float   VroWidth       { get; set; } = 0.22f;
+    public List<uint> VroKeybind  { get; set; } = new();
 
     // Discord Rich Presence — privacy per status
     public bool DpHideInstIdJoinMe  { get; set; }
