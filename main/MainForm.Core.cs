@@ -405,26 +405,27 @@ public partial class MainForm
             try
             {
                 var ctx = await _httpListener.GetContextAsync();
-                _ = Task.Run(() => HandleHttp(ctx));
+                _ = HandleHttpAsync(ctx);
             }
-            catch { break; }
+            catch (ObjectDisposedException) { break; }   // intentional shutdown
+            catch { /* transient error (connection reset, OS glitch) — keep accepting */ }
         }
     }
 
-    private void HandleHttp(System.Net.HttpListenerContext ctx)
+    private async Task HandleHttpAsync(System.Net.HttpListenerContext ctx)
     {
         var path    = ctx.Request.Url?.AbsolutePath ?? "/";
         var isThumb = ctx.Request.Url?.Query?.Contains("thumb=1") == true;
         try
         {
             if (path.StartsWith("/imgcache/"))
-                ServeFile(ctx, Path.Combine(_imgCacheDir, Uri.UnescapeDataString(path["/imgcache/".Length..])));
+                await ServeFileAsync(ctx, Path.Combine(_imgCacheDir, Uri.UnescapeDataString(path["/imgcache/".Length..])));
             else if (path.StartsWith("/vrcphotos/"))
             {
                 if (!string.IsNullOrEmpty(_vrcPhotoDir))
                 {
                     var file = Path.Combine(_vrcPhotoDir, Uri.UnescapeDataString(path["/vrcphotos/".Length..]));
-                    if (isThumb) ServeThumb(ctx, file); else ServeFile(ctx, file);
+                    if (isThumb) await ServeThumbAsync(ctx, file); else await ServeFileAsync(ctx, file);
                 }
                 else ctx.Response.StatusCode = 404;
             }
@@ -436,7 +437,7 @@ public partial class MainForm
                     && idx < _settings.WatchFolders.Count)
                 {
                     var file = Path.Combine(_settings.WatchFolders[idx], Uri.UnescapeDataString(rest[(slash + 1)..]));
-                    if (isThumb) ServeThumb(ctx, file); else ServeFile(ctx, file);
+                    if (isThumb) await ServeThumbAsync(ctx, file); else await ServeFileAsync(ctx, file);
                 }
                 else ctx.Response.StatusCode = 404;
             }
@@ -446,7 +447,7 @@ public partial class MainForm
         finally { try { ctx.Response.Close(); } catch { } }
     }
 
-    private static void ServeFile(System.Net.HttpListenerContext ctx, string file)
+    private static async Task ServeFileAsync(System.Net.HttpListenerContext ctx, string file)
     {
         if (!File.Exists(file)) { ctx.Response.StatusCode = 404; return; }
         ctx.Response.ContentType = Path.GetExtension(file).ToLower() switch {
@@ -462,20 +463,20 @@ public partial class MainForm
         // Stream directly — NEVER load full file into RAM (videos can be multiple gigabytes)
         ctx.Response.ContentLength64 = new FileInfo(file).Length;
         using var fs = File.OpenRead(file);
-        fs.CopyTo(ctx.Response.OutputStream);
+        await fs.CopyToAsync(ctx.Response.OutputStream);
     }
 
     private static readonly SemaphoreSlim _thumbSem = new(2, 2);
     private static int _thumbGenCount = 0;
 
-    private void ServeThumb(System.Net.HttpListenerContext ctx, string file)
+    private async Task ServeThumbAsync(System.Net.HttpListenerContext ctx, string file)
     {
         if (!File.Exists(file)) { ctx.Response.StatusCode = 404; return; }
         var ext = Path.GetExtension(file).ToLower();
         // Only thumbnail images; serve other types (video etc.) as-is
         if (ext is not (".jpg" or ".jpeg" or ".png" or ".webp"))
         {
-            ServeFile(ctx, file);
+            await ServeFileAsync(ctx, file);
             return;
         }
 
@@ -485,39 +486,43 @@ public partial class MainForm
 
         if (!File.Exists(thumbPath) || File.GetLastWriteTimeUtc(thumbPath) < File.GetLastWriteTimeUtc(file))
         {
-            _thumbSem.Wait();
+            await _thumbSem.WaitAsync();
             try
             {
                 // Double-check after acquiring semaphore (another thread may have generated it)
                 if (!File.Exists(thumbPath) || File.GetLastWriteTimeUtc(thumbPath) < File.GetLastWriteTimeUtc(file))
                 {
-                    var tmpPath = thumbPath + ".tmp";
-                    // FromStream instead of FromFile — releases file handle immediately after read
-                    var rawBytes = File.ReadAllBytes(file);
-                    using var ms  = new MemoryStream(rawBytes);
-                    using var src = System.Drawing.Image.FromStream(ms, false, false);
-                    const int maxSize = 400;
-                    var scale = Math.Min(1.0, Math.Min(maxSize / (double)src.Width, maxSize / (double)src.Height));
-                    var w = Math.Max(1, (int)(src.Width  * scale));
-                    var h = Math.Max(1, (int)(src.Height * scale));
-                    using var bmp = new System.Drawing.Bitmap(w, h);
-                    using (var g = System.Drawing.Graphics.FromImage(bmp))
+                    // Image resize is CPU-bound — offload to thread pool
+                    await Task.Run(() =>
                     {
-                        g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
-                        g.DrawImage(src, 0, 0, w, h);
-                    }
-                    var jpegCodec = System.Drawing.Imaging.ImageCodecInfo.GetImageEncoders()
-                        .First(c => c.FormatID == System.Drawing.Imaging.ImageFormat.Jpeg.Guid);
-                    var encParams = new System.Drawing.Imaging.EncoderParameters(1);
-                    encParams.Param[0] = new System.Drawing.Imaging.EncoderParameter(
-                        System.Drawing.Imaging.Encoder.Quality, 72L);
-                    // Atomic write: temp file then rename to prevent serving half-written files
-                    bmp.Save(tmpPath, jpegCodec, encParams);
-                    File.Move(tmpPath, thumbPath, overwrite: true);
+                        var tmpPath = thumbPath + ".tmp";
+                        // FromStream instead of FromFile — releases file handle immediately after read
+                        var rawBytes = File.ReadAllBytes(file);
+                        using var ms  = new MemoryStream(rawBytes);
+                        using var src = System.Drawing.Image.FromStream(ms, false, false);
+                        const int maxSize = 400;
+                        var scale = Math.Min(1.0, Math.Min(maxSize / (double)src.Width, maxSize / (double)src.Height));
+                        var w = Math.Max(1, (int)(src.Width  * scale));
+                        var h = Math.Max(1, (int)(src.Height * scale));
+                        using var bmp = new System.Drawing.Bitmap(w, h);
+                        using (var g = System.Drawing.Graphics.FromImage(bmp))
+                        {
+                            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
+                            g.DrawImage(src, 0, 0, w, h);
+                        }
+                        var jpegCodec = System.Drawing.Imaging.ImageCodecInfo.GetImageEncoders()
+                            .First(c => c.FormatID == System.Drawing.Imaging.ImageFormat.Jpeg.Guid);
+                        var encParams = new System.Drawing.Imaging.EncoderParameters(1);
+                        encParams.Param[0] = new System.Drawing.Imaging.EncoderParameter(
+                            System.Drawing.Imaging.Encoder.Quality, 72L);
+                        // Atomic write: temp file then rename to prevent serving half-written files
+                        bmp.Save(tmpPath, jpegCodec, encParams);
+                        File.Move(tmpPath, thumbPath, overwrite: true);
 
-                    // Periodic GC to prompt libgdiplus to release native memory
-                    if (Interlocked.Increment(ref _thumbGenCount) % 10 == 0)
-                        GC.Collect(1, GCCollectionMode.Optimized, false);
+                        // Periodic GC to prompt libgdiplus to release native memory
+                        if (Interlocked.Increment(ref _thumbGenCount) % 10 == 0)
+                            GC.Collect(1, GCCollectionMode.Optimized, false);
+                    });
                 }
             }
             finally { _thumbSem.Release(); }
@@ -525,8 +530,8 @@ public partial class MainForm
 
         ctx.Response.ContentType = "image/jpeg";
         ctx.Response.StatusCode  = 200;
-        var thumbBytes = File.ReadAllBytes(thumbPath);
+        var thumbBytes = await File.ReadAllBytesAsync(thumbPath);
         ctx.Response.ContentLength64 = thumbBytes.Length;
-        ctx.Response.OutputStream.Write(thumbBytes);
+        await ctx.Response.OutputStream.WriteAsync(thumbBytes);
     }
 }

@@ -12,7 +12,7 @@ public class ImageCacheService
     private readonly HttpClient _http;
     private readonly HashSet<string> _inFlight = new();
     private readonly HashSet<string> _permanentFail = new();
-    private readonly SemaphoreSlim _downloadSem = new(8, 8);
+    private readonly SemaphoreSlim _downloadSem = new(4, 4);
     private static readonly TimeSpan TTL      = TimeSpan.FromDays(7);
     private static readonly TimeSpan TTL_LONG = TimeSpan.FromDays(14); // for world thumbnails
     // Reverse map: fileName (e.g. "abc123.jpg") → original VRC URL — for resolving cached URLs back to originals
