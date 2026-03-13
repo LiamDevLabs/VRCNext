@@ -259,6 +259,7 @@ public partial class MainForm
     {
         try
         {
+#if WINDOWS
             var vrcPath = _settings.VrcPath;
             if (string.IsNullOrWhiteSpace(vrcPath) || !File.Exists(vrcPath))
             {
@@ -272,6 +273,15 @@ public partial class MainForm
                 WorkingDirectory = Path.GetDirectoryName(vrcPath) ?? "",
                 UseShellExecute = true
             });
+#else
+            // On Linux, launch via Steam so Proton is applied automatically
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "steam",
+                Arguments = "steam://rungameid/438100",
+                UseShellExecute = false
+            });
+#endif
             SendToJS("log", new { msg = "Launched VRChat", color = "ok" });
 
             foreach (var exe in _settings.ExtraExe)

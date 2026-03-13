@@ -590,6 +590,12 @@ window.external.receiveMessage(rawMsg => {
         case 'setPlatform':
             if (payload?.isLinux) {
                 document.querySelectorAll('[data-windows-only]').forEach(el => el.style.display = 'none');
+                const lbl = document.getElementById('labelStartWithSystem');
+                if (lbl) lbl.textContent = 'Auto-start VRCNext with system';
+                const vrcPathInput = document.getElementById('setVrcPath');
+                if (vrcPathInput) { vrcPathInput.value = 'steam://rungameid/438100'; vrcPathInput.readOnly = true; vrcPathInput.style.opacity = '0.5'; }
+                const browseVrcBtn = document.getElementById('browseVrcBtn');
+                if (browseVrcBtn) browseVrcBtn.style.display = 'none';
             }
             break;
         case 'ftAlsoWasHere':

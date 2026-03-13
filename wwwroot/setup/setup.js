@@ -176,6 +176,30 @@ function onBackendMessage(e) {
         case 'setPlatform':
             if (p && p.isLinux) {
                 document.querySelectorAll('[data-windows-only]').forEach(function(el) { el.style.display = 'none'; });
+
+                // Page 3: VRChat path — Linux uses steam command, no browse needed
+                var vrcInput = document.getElementById('vrcPathInput');
+                if (vrcInput) {
+                    vrcInput.value = 'steam steam://rungameid/438100';
+                    vrcInput.readOnly = true;
+                    vrcInput.placeholder = 'steam steam://rungameid/438100';
+                }
+                var browseBtn = document.getElementById('vrcBrowseBtn');
+                if (browseBtn) browseBtn.style.display = 'none';
+                var vrcDesc = document.getElementById('vrcPathDesc');
+                if (vrcDesc) vrcDesc.innerHTML = 'VRChat is launched through <strong>Steam</strong> on Linux. VRCNext automatically uses the Steam command below &mdash; no manual path selection needed.';
+                var vrcHint = document.getElementById('vrcPathHint');
+                if (vrcHint) vrcHint.innerHTML = '<span class="msi" style="font-size:13px;vertical-align:middle;color:rgba(106,90,249,.5);">info</span> VRChat runs via Proton. Steam handles the launch automatically.';
+
+                // Page 6: Start with system (Linux uses XDG autostart)
+                var pageTitle = document.getElementById('startupPageTitle');
+                if (pageTitle) pageTitle.textContent = 'Start with System';
+                var pageDesc = document.getElementById('startupPageDesc');
+                if (pageDesc) pageDesc.textContent = 'Should VRCNext launch automatically when your system starts? It will open minimized so it is ready when you need it.';
+                var toggleTitle = document.getElementById('startupToggleTitle');
+                if (toggleTitle) toggleTitle.textContent = 'Auto-start with system';
+                var toggleSub = document.getElementById('startupToggleSub');
+                if (toggleSub) toggleSub.textContent = 'Opens minimized when system boots';
             }
             break;
     }

@@ -7,7 +7,19 @@ dotnet publish VRCNext.csproj ^
   /p:PublishSingleFile=true ^
   /p:IncludeNativeLibrariesForSelfExtract=true
 
-powershell -NoProfile -Command "(Get-Content install_vrcnext.sh -Raw) -replace \"`r`n\",\"`n\" | Set-Content -NoNewline publish\linux\install_vrcnext.sh"
+if errorlevel 1 (
+  echo.
+  echo Build FAILED.
+  pause
+  exit /b 1
+)
+
+if exist install_vrcnext.sh (
+  if not exist publish\linux mkdir publish\linux
+  powershell -NoProfile -Command "(Get-Content install_vrcnext.sh -Raw) -replace \"`r`n\",\"`n\" | Set-Content -NoNewline publish\linux\install_vrcnext.sh"
+) else (
+  echo WARNING: install_vrcnext.sh not found, skipping copy.
+)
 
 echo.
 echo Linux build complete: publish\linux\

@@ -227,15 +227,23 @@ public partial class MainForm
         else
             key.DeleteValue("VRCNext", throwOnMissingValue: false);
 #else
+        // XDG autostart — works on GNOME, KDE Plasma, XFCE, etc.
         var dir  = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "autostart");
         var file = Path.Combine(dir, "VRCNext.desktop");
         if (enable)
         {
             Directory.CreateDirectory(dir);
+            var exe = Environment.ProcessPath ?? "VRCNext";
             File.WriteAllText(file,
-                $"[Desktop Entry]\nType=Application\nName=VRCNext\n" +
-                $"Exec=\"{Environment.ProcessPath ?? "VRCNext"}\" --minimized\nHidden=false\n");
+                "[Desktop Entry]\n" +
+                "Type=Application\n" +
+                "Name=VRCNext\n" +
+                $"Exec=\"{exe}\" --minimized\n" +
+                "Hidden=false\n" +
+                "NoDisplay=false\n" +
+                "X-GNOME-Autostart-enabled=true\n" +
+                "StartupNotify=false\n");
         }
         else if (File.Exists(file)) File.Delete(file);
 #endif
@@ -354,9 +362,10 @@ public partial class MainForm
 
     private static string? DetectVrcLaunchExe()
     {
-        // Check common Steam library locations across all drives
         var candidates = new List<string>();
 
+#if WINDOWS
+        // Windows: check all fixed drives
         foreach (var drive in DriveInfo.GetDrives())
         {
             if (drive.DriveType != DriveType.Fixed) continue;
@@ -369,25 +378,74 @@ public partial class MainForm
             candidates.Add(Path.Combine(root, "Games", "SteamLibrary", "steamapps", "common", "VRChat", "launch.exe"));
         }
 
-        // Also try reading Steam's libraryfolders.vdf for custom library paths
+        // Windows: read libraryfolders.vdf
+        var steamVdfWin = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+            "Steam", "steamapps", "libraryfolders.vdf");
+        AddVdfLibraries(steamVdfWin, candidates, "launch.exe");
+#else
+        // Linux: standard Steam locations (VRChat runs as .exe via Proton)
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var linuxSteamRoots = new[]
+        {
+            Path.Combine(home, ".local", "share", "Steam"),
+            Path.Combine(home, ".steam", "steam"),
+            Path.Combine(home, ".steam", "root"),
+        };
+        foreach (var sr in linuxSteamRoots)
+        {
+            candidates.Add(Path.Combine(sr, "steamapps", "common", "VRChat", "VRChat.exe"));
+            candidates.Add(Path.Combine(sr, "steamapps", "common", "VRChat", "launch.exe"));
+            // Read libraryfolders.vdf for extra library paths
+            AddVdfLibraries(Path.Combine(sr, "steamapps", "libraryfolders.vdf"), candidates, "VRChat.exe");
+        }
+#endif
+        return candidates.FirstOrDefault(File.Exists);
+    }
+
+    private static void AddVdfLibraries(string vdfPath, List<string> candidates, string exe)
+    {
         try
         {
-            var steamDefault = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-                "Steam", "steamapps", "libraryfolders.vdf");
-            if (File.Exists(steamDefault))
+            if (!File.Exists(vdfPath)) return;
+            var vdf = File.ReadAllText(vdfPath);
+            foreach (System.Text.RegularExpressions.Match m in
+                System.Text.RegularExpressions.Regex.Matches(vdf, "\"path\"\\s+\"([^\"]+)\""))
             {
-                var vdf = File.ReadAllText(steamDefault);
-                foreach (System.Text.RegularExpressions.Match m in
-                    System.Text.RegularExpressions.Regex.Matches(vdf, "\"path\"\\s+\"([^\"]+)\""))
-                {
-                    var libPath = m.Groups[1].Value.Replace("\\\\", "\\");
-                    candidates.Add(Path.Combine(libPath, "steamapps", "common", "VRChat", "launch.exe"));
-                }
+                var libPath = m.Groups[1].Value.Replace("\\\\", "\\");
+                candidates.Add(Path.Combine(libPath, "steamapps", "common", "VRChat", exe));
             }
         }
         catch { }
+    }
 
-        return candidates.FirstOrDefault(File.Exists);
+    internal static string DetectVrcPhotoDir()
+    {
+#if WINDOWS
+        var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "VRChat");
+        return Directory.Exists(path) ? path : "";
+#else
+        // VRChat via Proton stores screenshots in the Wine prefix (App ID 438100)
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var steamRoots = new[]
+        {
+            Path.Combine(home, ".local", "share", "Steam"),
+            Path.Combine(home, ".steam", "steam"),
+        };
+        foreach (var sr in steamRoots)
+        {
+            var protonPath = Path.Combine(sr, "steamapps", "compatdata", "438100",
+                "pfx", "drive_c", "users", "steamuser", "My Pictures", "VRChat");
+            if (Directory.Exists(protonPath)) return protonPath;
+
+            // Some Proton versions use "Pictures" instead of "My Pictures"
+            var protonPath2 = Path.Combine(sr, "steamapps", "compatdata", "438100",
+                "pfx", "drive_c", "users", "steamuser", "Pictures", "VRChat");
+            if (Directory.Exists(protonPath2)) return protonPath2;
+        }
+        // Fallback: native ~/Pictures/VRChat
+        var native = Path.Combine(home, "Pictures", "VRChat");
+        return Directory.Exists(native) ? native : "";
+#endif
     }
 }

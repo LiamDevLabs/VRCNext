@@ -26,7 +26,7 @@
                     <button class="nav-btn nav-sub" onclick="showTab(5)"><span class="ni msi">chat</span><span class="nl">Custom Chatbox</span></button>
                     <button class="nav-btn nav-sub" data-windows-only onclick="showTab(6)"><span class="ni msi">cell_tower</span><span class="nl">Media Relay</span></button>
                     <button class="nav-btn nav-sub" data-windows-only onclick="showTab(10)"><span class="ni msi">rocket_launch</span><span class="nl">Space Flight</span></button>
-                    <button class="nav-btn nav-sub" onclick="showTab(11)"><span class="ni msi">tune</span><span class="nl">OSC Tool</span></button>
+                    <button class="nav-btn nav-sub" onclick="showTab(11)" data-windows-only><span class="ni msi">tune</span><span class="nl">OSC Tool</span></button>
                     <button class="nav-btn nav-sub" data-windows-only onclick="showTab(14)"><span class="ni msi">smart_display</span><span class="nl">YouTube Fix</span></button>
                     <button class="nav-btn nav-sub" onclick="showTab(8)"><span class="ni msi">article</span><span class="nl">Activity Log</span></button>
                     <button class="nav-btn nav-sub" onclick="showTab(15)"><span class="ni msi">hub</span><span class="nl">Mutual Network</span></button>
@@ -407,7 +407,7 @@
                         <div class="sf-section-label">VRChat Path</div>
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
                             <input type="text" id="setVrcPath" class="vrcn-edit-field" placeholder="C:\...\VRChat.exe" oninput="autoSave()" style="flex:1;">
-                            <button class="vrcn-button" onclick="browseExe('vrchat')"><span class="msi" style="font-size:16px;">folder_open</span> Browse</button>
+                            <button class="vrcn-button" id="browseVrcBtn" onclick="browseExe('vrchat')"><span class="msi" style="font-size:16px;">folder_open</span> Browse</button>
                         </div>
                         <div class="sf-section-label">Additional Apps</div>
                         <div class="set-desc" style="margin-bottom:8px;">Apps to launch alongside VRChat when you click "Play VRChat". Useful for OVR Advanced Settings, SlimeVR, VRCFaceTracking, and similar tools.</div>
@@ -416,7 +416,7 @@
                             <button class="vrcn-button" onclick="browseExe('extra')"><span class="msi" style="font-size:16px;">add</span> Add App</button>
                         </div>
                         <div style="height:12px;"></div>
-                        <div class="sf-toggle-row"><span>Auto-start VRCNext with Windows</span><label class="toggle"><input type="checkbox" id="setStartWithWindows" onchange="autoSave()"><div class="toggle-track"><div class="toggle-knob"></div></div></label></div>
+                        <div class="sf-toggle-row"><span id="labelStartWithSystem">Auto-start VRCNext with Windows</span><label class="toggle"><input type="checkbox" id="setStartWithWindows" onchange="autoSave()"><div class="toggle-track"><div class="toggle-knob"></div></div></label></div>
                     </div>
 
                     <!-- VRCHAT API LOGIN -->
@@ -599,7 +599,7 @@
                 </div>
             </div>
             <!-- Tab 11: OSC Tool -->
-            <div class="tab" id="tab11">
+            <div class="tab" id="tab11" data-windows-only>
                 <div class="sf-layout">
                     <div class="sf-card sf-status-card">
                         <div class="sf-status-row">

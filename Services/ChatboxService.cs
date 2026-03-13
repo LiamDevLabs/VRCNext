@@ -58,6 +58,8 @@ namespace VRCNext
         // System stats
 #if WINDOWS
         private PerformanceCounter? _cpuCounter;
+#else
+        private long _prevCpuTotal, _prevCpuIdle;
 #endif
         private float _cpuPercent;
         private float _ramUsedGB;
@@ -188,6 +190,49 @@ namespace VRCNext
                 _ramUsedGB = (_ramTotalGB * 1024f - availMB) / 1024f;
             }
             catch { }
+#else
+            // CPU via /proc/stat
+            try
+            {
+                var statParts = File.ReadLines("/proc/stat").First()
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                // cpu user nice system idle iowait irq softirq steal ...
+                long user   = long.Parse(statParts[1]);
+                long nice   = long.Parse(statParts[2]);
+                long system = long.Parse(statParts[3]);
+                long idle   = long.Parse(statParts[4]);
+                long iowait = long.Parse(statParts[5]);
+                long irq    = long.Parse(statParts[6]);
+                long softirq = long.Parse(statParts[7]);
+                long total  = user + nice + system + idle + iowait + irq + softirq;
+                long idleAll = idle + iowait;
+                if (_prevCpuTotal > 0)
+                {
+                    long dt = total - _prevCpuTotal;
+                    long di = idleAll - _prevCpuIdle;
+                    _cpuPercent = dt > 0 ? (1f - (float)di / dt) * 100f : 0f;
+                }
+                _prevCpuTotal = total;
+                _prevCpuIdle  = idleAll;
+            }
+            catch { }
+
+            // RAM via /proc/meminfo
+            try
+            {
+                long memTotalKB = 0, memAvailKB = 0;
+                foreach (var line in File.ReadLines("/proc/meminfo"))
+                {
+                    if (line.StartsWith("MemTotal:"))
+                        memTotalKB = long.Parse(line.Split(':')[1].Trim().Split(' ')[0]);
+                    else if (line.StartsWith("MemAvailable:"))
+                        memAvailKB = long.Parse(line.Split(':')[1].Trim().Split(' ')[0]);
+                    if (memTotalKB > 0 && memAvailKB > 0) break;
+                }
+                _ramTotalGB = memTotalKB / (1024f * 1024f);
+                _ramUsedGB  = (memTotalKB - memAvailKB) / (1024f * 1024f);
+            }
+            catch { }
 #endif
         }
 
@@ -227,10 +272,49 @@ namespace VRCNext
             }
             catch { IsPlaying = false; }
 #else
-            IsPlaying = false;
-            await Task.CompletedTask;
+            // MPRIS2 via playerctl — works on KDE Plasma, GNOME, and most Linux DEs
+            try
+            {
+                // Single call: tab-separated status, title, artist, length(µs), position(µs)
+                var raw = await RunProcessAsync("playerctl",
+                    "--format={{status}}\t{{title}}\t{{artist}}\t{{mpris:length}}\t{{mpris:position}} metadata");
+                var cols = raw.Trim().Split('\t');
+                if (cols.Length < 2 || string.IsNullOrWhiteSpace(cols[0]))
+                {
+                    IsPlaying = false; CurrentTitle = ""; CurrentArtist = "";
+                    return;
+                }
+                IsPlaying = cols[0].Trim() == "Playing";
+                CurrentTitle  = cols.Length > 1 ? cols[1].Trim() : "";
+                CurrentArtist = cols.Length > 2 ? cols[2].Trim() : "";
+                if (cols.Length > 3 && long.TryParse(cols[3].Trim(), out long lenUs))
+                    CurrentDuration = TimeSpan.FromMicroseconds(lenUs);
+                if (cols.Length > 4 && long.TryParse(cols[4].Trim().Split(' ')[0], out long posUs))
+                    CurrentPosition = TimeSpan.FromMicroseconds(posUs);
+            }
+            catch { IsPlaying = false; }
 #endif
         }
+
+#if !WINDOWS
+        private static async Task<string> RunProcessAsync(string exe, string args)
+        {
+            using var proc = new Process
+            {
+                StartInfo = new ProcessStartInfo(exe, args)
+                {
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                }
+            };
+            proc.Start();
+            var output = await proc.StandardOutput.ReadToEndAsync();
+            await proc.WaitForExitAsync();
+            return output;
+        }
+#endif
 
         private void SendOscChatbox(string text, bool suppressSound = true)
         {

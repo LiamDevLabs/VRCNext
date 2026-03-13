@@ -1,12 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
+    <_LinuxBuild Condition="$(RuntimeIdentifier.StartsWith('linux'))">true</_LinuxBuild>
+    <TargetFramework Condition="'$(_LinuxBuild)'!='true'">net9.0-windows10.0.19041.0</TargetFramework>
+    <TargetFramework Condition="'$(_LinuxBuild)'=='true'">net9.0</TargetFramework>
+    <OutputType Condition="'$(_LinuxBuild)'!='true'">WinExe</OutputType>
+    <OutputType Condition="'$(_LinuxBuild)'=='true'">Exe</OutputType>
     <RootNamespace>VRCNext</RootNamespace>
     <AssemblyName>VRCNext</AssemblyName>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <ApplicationIcon>logo.ico</ApplicationIcon>
+    <ApplicationIcon Condition="'$(_LinuxBuild)'!='true'">logo.ico</ApplicationIcon>
     <CETCompat>false</CETCompat>
   </PropertyGroup>
   <!-- Define WINDOWS when targeting Windows (RID win-*), or when building on Windows without a specific RID (local dev build) -->
@@ -20,8 +23,8 @@
     <PackageReference Include="NativeFileDialogSharp" Version="0.5.0" />
     <PackageReference Include="VRChat.API" Version="2.20.7" />
     <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
-    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="9.0.0" />
-    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
+    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="9.0.0" Condition="'$(_LinuxBuild)'!='true'" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" Condition="'$(_LinuxBuild)'!='true'" />
     <PackageReference Include="Velopack" Version="0.0.915" />
     <PackageReference Include="Vosk" Version="0.3.38" />
     <PackageReference Include="NAudio" Version="2.2.1" />
@@ -36,7 +39,7 @@
   <None Update="voice\**\*">
     <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
   </None>
-  <None Update="openvr_api.dll">
+  <None Update="openvr_api.dll" Condition="'$(_LinuxBuild)'!='true'">
     <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
   </None>
 </ItemGroup>

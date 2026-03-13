@@ -77,11 +77,7 @@ public partial class MainForm
                     // Pre-fill photo dir with first WatchFolder, or default VRChat path
                     var photoDir = _settings.WatchFolders.FirstOrDefault() ?? "";
                     if (string.IsNullOrEmpty(photoDir))
-                    {
-                        var defPhoto = Path.Combine(
-                            Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "VRChat");
-                        if (Directory.Exists(defPhoto)) photoDir = defPhoto;
-                    }
+                        photoDir = DetectVrcPhotoDir();
 
                     SendToJS("setupState", new
                     {
@@ -89,6 +85,7 @@ public partial class MainForm
                         photoDir,
                         loggedIn = _vrcApi.IsLoggedIn,
                         displayName = _vrcApi.IsLoggedIn ? (_vrcApi.CurrentUserRaw?["displayName"]?.ToString() ?? "") : "",
+                        platform = OperatingSystem.IsWindows() ? "windows" : "linux",
                     });
                     _ = VrcTryResumeAsync();
                     break;
@@ -2952,6 +2949,7 @@ public partial class MainForm
                     var llLoc = msg["location"]?.ToString() ?? "";
                     var llVr  = msg["vr"]?.Value<bool>() ?? false;
                     {
+#if WINDOWS
                         var vrcExe = _settings.VrcPath;
                         if (!string.IsNullOrWhiteSpace(vrcExe) && File.Exists(vrcExe))
                         {
@@ -2998,6 +2996,25 @@ public partial class MainForm
                             }
                             catch { }
                         }
+#else
+                        // On Linux, launch via Steam so Proton is applied automatically
+                        string steamArgs;
+                        if (!string.IsNullOrEmpty(llLoc))
+                        {
+                            var joinUri = VRChatApiService.BuildLaunchUri(llLoc);
+                            steamArgs = $"steam://rungameid/438100//{Uri.EscapeDataString(joinUri)}";
+                        }
+                        else
+                        {
+                            steamArgs = "steam://rungameid/438100";
+                        }
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = "steam",
+                            Arguments = steamArgs,
+                            UseShellExecute = false
+                        });
+#endif
                         var modeLabel = llVr ? "VR" : "Desktop";
                         var locLabel  = !string.IsNullOrEmpty(llLoc) ? $" → {llLoc}" : "";
                         SendToJS("vrcActionResult", new { action = "join", success = true, message = $"Launching VRChat ({modeLabel})..." });

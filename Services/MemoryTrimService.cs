@@ -34,12 +34,17 @@ public class MemoryTrimService : IDisposable
     {
 #if WINDOWS
         try { EmptyWorkingSet(Process.GetCurrentProcess().Handle); } catch { }
+#else
+        try { malloc_trim(0); } catch { }
 #endif
     }
 
 #if WINDOWS
     [DllImport("psapi.dll")]
     private static extern bool EmptyWorkingSet(nint hProcess);
+#else
+    [DllImport("libc", EntryPoint = "malloc_trim")]
+    private static extern int malloc_trim(nuint pad);
 #endif
 
     public void Dispose()

@@ -73,14 +73,14 @@
             <div class="setup-page" data-page="2">
                 <div class="setup-icon"><span class="msi">folder_open</span></div>
                 <div class="setup-title">VRChat Launch Location</div>
-                <div class="setup-desc">Please locate the <strong>launch.exe</strong> in your VRChat root folder. This is usually found in your Steam library folder. If you can't find it, right-click VRChat in Steam → Properties → Installed Files → Browse.</div>
+                <div class="setup-desc" id="vrcPathDesc">Please locate the <strong>launch.exe</strong> in your VRChat root folder. This is usually found in your Steam library folder. If you can't find it, right-click VRChat in Steam → Properties → Installed Files → Browse.</div>
                 <div class="path-row">
                     <input type="text" id="vrcPathInput" class="path-input" placeholder="C:\Program Files\Steam\steamapps\common\VRChat\launch.exe" readonly>
-                    <button class="browse-btn" onclick="browseVrcPath()">
+                    <button class="browse-btn" id="vrcBrowseBtn" onclick="browseVrcPath()">
                         <span class="msi" style="font-size:16px;">folder_open</span> Browse
                     </button>
                 </div>
-                <div class="path-hint">
+                <div class="path-hint" id="vrcPathHint">
                     <span class="msi" style="font-size:13px;vertical-align:middle;color:rgba(106,90,249,.5);">info</span>
                     Default: <code>C:\Program Files (x86)\Steam\steamapps\common\VRChat\launch.exe</code>
                 </div>
@@ -128,17 +128,17 @@
                 </div>
             </div>
 
-            <!-- ═══ Page 6: Start with Windows ═══ -->
+            <!-- ═══ Page 6: Start with System ═══ -->
             <div class="setup-page" data-page="5">
                 <div class="setup-icon"><span class="msi">rocket_launch</span></div>
-                <div class="setup-title">Start with Windows</div>
-                <div class="setup-desc">Should VRCNext launch automatically when Windows starts? It will open minimized in the taskbar so it is ready when you need it.</div>
+                <div class="setup-title" id="startupPageTitle">Start with Windows</div>
+                <div class="setup-desc" id="startupPageDesc">Should VRCNext launch automatically when Windows starts? It will open minimized in the taskbar so it is ready when you need it.</div>
                 <div class="startup-toggle-card">
                     <div class="startup-toggle-label">
                         <span class="msi" style="font-size:20px;color:#8b7aff;">power_settings_new</span>
                         <div>
-                            <div class="startup-toggle-title">Auto-start with Windows</div>
-                            <div class="startup-toggle-sub">Opens minimized when Windows boots</div>
+                            <div class="startup-toggle-title" id="startupToggleTitle">Auto-start with Windows</div>
+                            <div class="startup-toggle-sub" id="startupToggleSub">Opens minimized when Windows boots</div>
                         </div>
                     </div>
                     <label class="sw-toggle">
