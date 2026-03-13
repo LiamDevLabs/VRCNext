@@ -2249,6 +2249,7 @@ public partial class MainForm
 
                 case "chatboxStop":
                     _chatbox?.Stop();
+                    _chatbox = null;
                     UpdateVroToolStates();
                     break;
 

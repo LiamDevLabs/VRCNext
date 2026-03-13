@@ -184,6 +184,7 @@ public partial class MainForm
                 try { Invoke(() => { SendToJS("vcState", GetVcState()); UpdateVroToolStates(); }); } catch { }
             };
             SendToJS("vcState", GetVcState());
+            UpdateVroToolStates();
         }
         catch { }
     }

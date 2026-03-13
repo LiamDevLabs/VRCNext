@@ -243,7 +243,7 @@ public partial class MainForm
         bool ytFix    = _vcProcess       != null && !_vcProcess.HasExited;
         bool space    = _steamVR         != null;
         bool relay    = _relayRunning;
-        bool chatbox  = _chatbox         != null;
+        bool chatbox  = _chatbox?.Enabled == true;
         _vrOverlay.SetToolStates(discord, voice, ytFix, space, relay, chatbox);
     }
 #else
@@ -321,12 +321,16 @@ public partial class MainForm
                 {
                     _steamVR ??= new SteamVRService(s => Invoke(() => SendToJS("log", new { msg = s, color = "sec" })));
                     _steamVR.SetUpdateCallback(data => { try { Invoke(() => SendToJS("sfUpdate", data)); } catch { } });
-                    if (_steamVR.Connect())
+                    bool sfOk = _steamVR.Connect();
+                    if (sfOk)
                     {
                         _steamVR.ApplyConfig(_settings.SfMultiplier, _settings.SfLockX, _settings.SfLockY, _settings.SfLockZ,
                             _settings.SfLeftHand, _settings.SfRightHand, _settings.SfUseGrip);
                         _steamVR.StartPolling();
                     }
+                    SendToJS("sfUpdate", new { connected = sfOk, dragging = false,
+                        offsetX = 0, offsetY = 0, offsetZ = 0,
+                        leftController = false, rightController = false, error = sfOk ? (string?)null : _steamVR.LastError });
                 }
                 break;
 
@@ -340,6 +344,7 @@ public partial class MainForm
                 {
                     _chatbox.Stop();
                     _chatbox = null;
+                    SendToJS("chatboxUpdate", new { enabled = false });
                 }
                 else
                 {
@@ -348,6 +353,7 @@ public partial class MainForm
                     _chatbox.ApplyConfig(true, _settings.CbShowTime, _settings.CbShowMedia, _settings.CbShowPlaytime,
                         _settings.CbShowCustomText, _settings.CbShowSystemStats, _settings.CbShowAfk, _settings.CbAfkMessage,
                         _settings.CbSuppressSound, _settings.CbTimeFormat, _settings.CbSeparator, _settings.CbIntervalMs, _settings.CbCustomLines);
+                    SendToJS("chatboxUpdate", new { enabled = true });
                 }
                 break;
         }

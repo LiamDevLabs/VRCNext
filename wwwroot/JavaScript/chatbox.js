@@ -70,9 +70,26 @@ function renderChatboxLines() {
 
 // Handle updates from backend
 function handleChatboxUpdate(data) {
-    // Sync topbar badge with enabled state
+    // Sync full UI state when enabled flag changes (e.g. toggled from VR overlay)
     if (data.enabled !== undefined) {
-        document.getElementById('badgeChatbox').className = data.enabled ? 'mini-badge online' : 'mini-badge offline';
+        const wasEnabled = chatboxEnabled;
+        chatboxEnabled = !!data.enabled;
+        document.getElementById('badgeChatbox').className = chatboxEnabled ? 'mini-badge online' : 'mini-badge offline';
+        if (chatboxEnabled !== wasEnabled) {
+            const btn = document.getElementById('cbConnBtn');
+            const dot = document.getElementById('cbDot');
+            const txt = document.getElementById('cbStatusText');
+            if (chatboxEnabled) {
+                if (btn) btn.innerHTML = '<span class="msi" style="font-size:16px;">stop</span> Stop';
+                if (dot) dot.className = 'sf-dot online';
+                if (txt) txt.textContent = 'Running';
+            } else {
+                if (btn) btn.innerHTML = '<span class="msi" style="font-size:16px;">play_arrow</span> Start';
+                if (dot) dot.className = 'sf-dot offline';
+                if (txt) txt.textContent = 'Not running';
+            }
+            renderDashboard();
+        }
     }
 
     // Update preview
