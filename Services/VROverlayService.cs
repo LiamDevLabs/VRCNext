@@ -126,8 +126,9 @@ namespace VRCNext.Services
         // Free hand < ENTER_DIST from wrist → Mouse mode + interactive flag on.
         // Free hand > LEAVE_DIST            → back to None (hysteresis prevents flicker).
         private bool  _interactMode      = false;
-        private const float INTERACT_ENTER_DIST = 0.28f; // 28 cm
-        private const float INTERACT_LEAVE_DIST = 0.36f; // 36 cm
+        public float ControlRadius { get; private set; } = 0.28f; // enter dist in metres
+        private float InteractEnterDist => Math.Max(0.03f, ControlRadius);
+        private float InteractLeaveDist => InteractEnterDist + 0.08f;
 
         // ── Overlay content ───────────────────────────────────────────────────
         private int                   _activeTab = 0; // 0=Alerts 1=Location 2=Music 3=Tools
@@ -528,7 +529,7 @@ namespace VRCNext.Services
             float px, float py, float pz,
             float rx, float ry, float rz,
             float width, List<uint> keybind, int keybindHand = 0, int keybindMode = 0,
-            List<uint>? keybindDt = null, int keybindDtHand = 0)
+            List<uint>? keybindDt = null, int keybindDtHand = 0, float controlRadius = 28f)
         {
             AttachToLeft  = attachLeft;
             AttachToHand  = attachHand;
@@ -540,6 +541,7 @@ namespace VRCNext.Services
             KeybindMode   = keybindMode;
             KeybindDt     = keybindDt ?? new();
             KeybindDtHand = keybindDtHand;
+            ControlRadius = Math.Clamp(controlRadius / 100f, 0.03f, 0.28f); // stored in metres
 
             if (IsConnected && OpenVR.Overlay != null)
             {
@@ -796,20 +798,27 @@ namespace VRCNext.Services
 
             var wm = _poses[wristIdx].mDeviceToAbsoluteTracking;
             var fm = _poses[freeIdx].mDeviceToAbsoluteTracking;
-            // Translation is in the last column: m3, m7, m11
-            var wristPos = new Vector3(wm.m3, wm.m7, wm.m11);
-            var freePos  = new Vector3(fm.m3, fm.m7, fm.m11);
 
-            float dist = Vector3.Distance(wristPos, freePos);
+            // Transform the overlay's local offset (PosX/Y/Z) into world space using the
+            // wrist controller's device-to-absolute matrix.  This makes the activation
+            // sphere truly centred on the overlay panel rather than on the controller origin,
+            // so the radius is equal from every direction as seen visually.
+            var overlayWorldPos = new Vector3(
+                wm.m0 * PosX + wm.m1 * PosY + wm.m2 * PosZ + wm.m3,
+                wm.m4 * PosX + wm.m5 * PosY + wm.m6 * PosZ + wm.m7,
+                wm.m8 * PosX + wm.m9 * PosY + wm.m10 * PosZ + wm.m11);
+            var freePos = new Vector3(fm.m3, fm.m7, fm.m11);
 
-            if (!_interactMode && dist < INTERACT_ENTER_DIST)
+            float dist = Vector3.Distance(overlayWorldPos, freePos);
+
+            if (!_interactMode && dist < InteractEnterDist)
             {
                 _interactMode = true;
                 OpenVR.Overlay.SetOverlayInputMethod(_overlayHandle, VROverlayInputMethod.Mouse);
                 OpenVR.Overlay.SetOverlayFlag(_overlayHandle,
                     VROverlayFlags.MakeOverlaysInteractiveIfVisible, true);
             }
-            else if (_interactMode && dist > INTERACT_LEAVE_DIST)
+            else if (_interactMode && dist > InteractLeaveDist)
             {
                 DisableInteract();
             }
@@ -1616,8 +1625,20 @@ namespace VRCNext.Services
                 && (DateTime.UtcNow - cdT).TotalSeconds < 5;
 
             // ── Card background ────────────────────────────────────────────
-            using var cardBg = new SolidBrush(Color.FromArgb(inCooldown ? 160 : 190, inCooldown ? th.Ok : th.BgCard));
+            using var cardBg = new SolidBrush(Color.FromArgb(inCooldown ? 200 : 190, inCooldown ? th.Ok : th.BgCard));
             FillRoundedRect(g, cardBg, x, y, w, h, 8);
+
+            // ── Cooldown state: green card + centred checkmark only ────────
+            if (inCooldown)
+            {
+                using var checkFont = _matSymFamily != null
+                    ? new Font(_matSymFamily, 26f, FontStyle.Regular, GraphicsUnit.Point)
+                    : new Font("Segoe MDL2 Assets", 26f, FontStyle.Regular, GraphicsUnit.Point);
+                using var checkBrush = new SolidBrush(Color.White);
+                var checkFmt = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                g.DrawString("\uE876", checkFont, checkBrush, new RectangleF(x, y, w, h), checkFmt);
+                return;
+            }
 
             // ── World image (left strip 52×h-4) ───────────────────────────
             const int imgW = 52;
@@ -1690,7 +1711,7 @@ namespace VRCNext.Services
 
             // World name (bold 9pt)
             using var worldNameFont  = new Font("Segoe UI", 9f, FontStyle.Bold, GraphicsUnit.Point);
-            using var worldNameBrush = new SolidBrush(inCooldown ? Color.White : th.Tx1);
+            using var worldNameBrush = new SolidBrush(th.Tx1);
             var ellipsisFmt = new StringFormat { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };
             string worldDisplay = !string.IsNullOrEmpty(first.WorldName) ? first.WorldName : first.WorldId;
             g.DrawString(worldDisplay, worldNameFont, worldNameBrush,
@@ -1701,28 +1722,17 @@ namespace VRCNext.Services
                 ? first.FriendName
                 : $"{friends.Count} friends";
             using var subFont  = new Font("Segoe UI", 7.5f, FontStyle.Regular, GraphicsUnit.Point);
-            using var subBrush = new SolidBrush(inCooldown ? Color.FromArgb(200, Color.White) : th.Tx3);
+            using var subBrush = new SolidBrush(th.Tx3);
             g.DrawString(subText, subFont, subBrush,
                 new RectangleF(textX, y + 28, textW, 14), ellipsisFmt);
 
             // Instance type (7pt, accent-ish)
             string instanceType = ParseInstanceType(first.Location);
             using var typeFont  = new Font("Segoe UI", 7f, FontStyle.Regular, GraphicsUnit.Point);
-            using var typeBrush = new SolidBrush(inCooldown ? Color.FromArgb(160, Color.White) : Color.FromArgb(160, th.Tx2));
+            using var typeBrush = new SolidBrush(Color.FromArgb(160, th.Tx2));
             g.DrawString(instanceType, typeFont, typeBrush,
                 new RectangleF(textX, y + 44, textW, 13), ellipsisFmt);
 
-            // ── Cooldown checkmark ────────────────────────────────────────
-            if (inCooldown)
-            {
-                using var checkFont = _matSymFamily != null
-                    ? new Font(_matSymFamily, 16f, FontStyle.Regular, GraphicsUnit.Point)
-                    : new Font("Segoe MDL2 Assets", 16f, FontStyle.Regular, GraphicsUnit.Point);
-                using var checkBrush = new SolidBrush(Color.White);
-                var checkFmt = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-                g.DrawString("\uE876", checkFont, checkBrush,
-                    new RectangleF(x + imgW + 4, y, w - imgW - 4 - avSz - 10, h), checkFmt);
-            }
         }
 
         private static string ParseInstanceType(string location)

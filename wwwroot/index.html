@@ -1006,44 +1006,53 @@
                         <div class="vro-transform-grid">
                             <div class="vro-axis-row">
                                 <span class="vro-axis-lbl vro-x">X</span>
-                                <input type="range" id="vroPosX" min="-0.3" max="0.3" step="0.005" value="0" class="vro-slider" oninput="vroUpdateTransformLabel('vroPosX');vroAutoSave()">
-                                <span class="vro-axis-val" id="vroPosXVal">0.00</span>
+                                <input type="range" id="vroPosX" min="-0.3" max="0.3" step="0.005" value="-0.10" class="vro-slider" oninput="vroUpdateTransformLabel('vroPosX');vroAutoSave()">
+                                <span class="vro-axis-val" id="vroPosXVal">-0.10</span>
                             </div>
                             <div class="vro-axis-row">
                                 <span class="vro-axis-lbl vro-y">Y</span>
-                                <input type="range" id="vroPosY" min="-0.2" max="0.3" step="0.005" value="0.07" class="vro-slider" oninput="vroUpdateTransformLabel('vroPosY');vroAutoSave()">
-                                <span class="vro-axis-val" id="vroPosYVal">0.07</span>
+                                <input type="range" id="vroPosY" min="-0.2" max="0.3" step="0.005" value="-0.03" class="vro-slider" oninput="vroUpdateTransformLabel('vroPosY');vroAutoSave()">
+                                <span class="vro-axis-val" id="vroPosYVal">-0.03</span>
                             </div>
                             <div class="vro-axis-row">
                                 <span class="vro-axis-lbl vro-z">Z</span>
-                                <input type="range" id="vroPosZ" min="-0.3" max="0.2" step="0.005" value="-0.05" class="vro-slider" oninput="vroUpdateTransformLabel('vroPosZ');vroAutoSave()">
-                                <span class="vro-axis-val" id="vroPosZVal">-0.05</span>
+                                <input type="range" id="vroPosZ" min="-0.3" max="0.2" step="0.005" value="0.11" class="vro-slider" oninput="vroUpdateTransformLabel('vroPosZ');vroAutoSave()">
+                                <span class="vro-axis-val" id="vroPosZVal">0.11</span>
                             </div>
                         </div>
                         <div class="sf-section-label" style="margin-top:8px;">Rotation (degrees)</div>
                         <div class="vro-transform-grid">
                             <div class="vro-axis-row">
                                 <span class="vro-axis-lbl vro-x">X</span>
-                                <input type="range" id="vroRotX" min="-180" max="180" step="1" value="-80" class="vro-slider" oninput="vroUpdateTransformLabel('vroRotX');vroAutoSave()">
-                                <span class="vro-axis-val" id="vroRotXVal">-80</span>
+                                <input type="range" id="vroRotX" min="-180" max="180" step="1" value="-180" class="vro-slider" oninput="vroUpdateTransformLabel('vroRotX');vroAutoSave()">
+                                <span class="vro-axis-val" id="vroRotXVal">-180</span>
                             </div>
                             <div class="vro-axis-row">
                                 <span class="vro-axis-lbl vro-y">Y</span>
-                                <input type="range" id="vroRotY" min="-180" max="180" step="1" value="0" class="vro-slider" oninput="vroUpdateTransformLabel('vroRotY');vroAutoSave()">
-                                <span class="vro-axis-val" id="vroRotYVal">0</span>
+                                <input type="range" id="vroRotY" min="-180" max="180" step="1" value="46" class="vro-slider" oninput="vroUpdateTransformLabel('vroRotY');vroAutoSave()">
+                                <span class="vro-axis-val" id="vroRotYVal">46</span>
                             </div>
                             <div class="vro-axis-row">
                                 <span class="vro-axis-lbl vro-z">Z</span>
-                                <input type="range" id="vroRotZ" min="-180" max="180" step="1" value="0" class="vro-slider" oninput="vroUpdateTransformLabel('vroRotZ');vroAutoSave()">
-                                <span class="vro-axis-val" id="vroRotZVal">0</span>
+                                <input type="range" id="vroRotZ" min="-180" max="180" step="1" value="85" class="vro-slider" oninput="vroUpdateTransformLabel('vroRotZ');vroAutoSave()">
+                                <span class="vro-axis-val" id="vroRotZVal">85</span>
                             </div>
                         </div>
                         <div class="sf-section-label" style="margin-top:8px;">Overlay Width</div>
                         <div class="vro-axis-row">
                             <span class="vro-axis-lbl" style="width:24px;color:var(--tx2);">W</span>
-                            <input type="range" id="vroWidth" min="0.05" max="0.5" step="0.01" value="0.22" class="vro-slider" oninput="vroUpdateTransformLabel('vroWidth');vroAutoSave()">
-                            <span class="vro-axis-val" id="vroWidthVal">0.22</span>
+                            <input type="range" id="vroWidth" min="0.05" max="0.5" step="0.01" value="0.16" class="vro-slider" oninput="vroUpdateTransformLabel('vroWidth');vroAutoSave()">
+                            <span class="vro-axis-val" id="vroWidthVal">0.16</span>
                         </div>
+                        <div class="sf-section-label" style="margin-top:8px;">Control Radius</div>
+                        <div class="vro-axis-row">
+                            <span class="vro-axis-lbl" style="width:24px;color:var(--tx2);">R</span>
+                            <input type="range" id="vroControlRadius" min="3" max="28" step="1" value="16" class="vro-slider" oninput="vroUpdateControlRadius()">
+                            <span class="vro-axis-val" id="vroControlRadiusVal">16 cm</span>
+                        </div>
+                        <button class="vrcn-button sub-tab-btn" style="margin-top:12px;width:100%;" onclick="vroResetTransform()">
+                            <span class="msi" style="font-size:14px;">restart_alt</span> Reset Transform
+                        </button>
                     </div>
 
                     <!-- Keybind -->

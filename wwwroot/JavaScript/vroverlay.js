@@ -128,18 +128,19 @@ function vroSendConfig() {
         action:        'vroConfig',
         attachLeft,
         attachHand:    true,
-        posX:          parseFloat(document.getElementById('vroPosX')?.value)  || 0,
-        posY:          parseFloat(document.getElementById('vroPosY')?.value)  || 0.07,
-        posZ:          parseFloat(document.getElementById('vroPosZ')?.value)  || -0.05,
-        rotX:          parseFloat(document.getElementById('vroRotX')?.value)  || -80,
-        rotY:          parseFloat(document.getElementById('vroRotY')?.value)  || 0,
-        rotZ:          parseFloat(document.getElementById('vroRotZ')?.value)  || 0,
-        width:         parseFloat(document.getElementById('vroWidth')?.value) || 0.22,
-        keybind:       vroComboIds,
-        keybindHand:   vroComboHand,
-        keybindDt:     vroDtIds,
-        keybindDtHand: vroDtHand,
-        keybindMode:   vroKeybindMode,
+        posX:          parseFloat(document.getElementById('vroPosX')?.value)  || -0.10,
+        posY:          parseFloat(document.getElementById('vroPosY')?.value)  || -0.03,
+        posZ:          parseFloat(document.getElementById('vroPosZ')?.value)  || 0.11,
+        rotX:          parseFloat(document.getElementById('vroRotX')?.value)  || -180,
+        rotY:          parseFloat(document.getElementById('vroRotY')?.value)  || 46,
+        rotZ:          parseFloat(document.getElementById('vroRotZ')?.value)  || 85,
+        width:         parseFloat(document.getElementById('vroWidth')?.value) || 0.16,
+        keybind:        vroComboIds,
+        keybindHand:    vroComboHand,
+        keybindDt:      vroDtIds,
+        keybindDtHand:  vroDtHand,
+        keybindMode:    vroKeybindMode,
+        controlRadius:  parseFloat(document.getElementById('vroControlRadius')?.value) || 28,
     });
 }
 
@@ -282,6 +283,30 @@ function vroUpdateTransformLabel(id) {
     label.textContent = parseFloat(input.value).toFixed(2);
 }
 
+function vroUpdateControlRadius() {
+    const input = document.getElementById('vroControlRadius');
+    const label = document.getElementById('vroControlRadiusVal');
+    if (input && label) label.textContent = input.value + ' cm';
+    vroAutoSave();
+}
+
+function vroResetTransform() {
+    const defaults = {
+        vroPosX: -0.10, vroPosY: -0.03, vroPosZ: 0.11,
+        vroRotX: -180,  vroRotY:  46,   vroRotZ: 85,
+        vroWidth: 0.16
+    };
+    for (const [id, val] of Object.entries(defaults)) {
+        const el = document.getElementById(id);
+        if (el) { el.value = val; vroUpdateTransformLabel(id); }
+    }
+    const crEl  = document.getElementById('vroControlRadius');
+    const crLbl = document.getElementById('vroControlRadiusVal');
+    if (crEl)  crEl.value = 16;
+    if (crLbl) crLbl.textContent = '16 cm';
+    vroAutoSave();
+}
+
 // ── Load settings from C# ─────────────────────────────────────────────────────
 
 function vroLoadSettings(s) {
@@ -308,6 +333,12 @@ function vroLoadSettings(s) {
     vroDtIds      = s.vroKeybindDt   || [];
     vroDtHand     = s.vroKeybindDtHand ?? 0;
     vroKeybindMode = s.vroKeybindMode ?? 0;
+
+    const crEl = document.getElementById('vroControlRadius');
+    const crLbl = document.getElementById('vroControlRadiusVal');
+    const crVal = s.vroControlRadius ?? 28;
+    if (crEl)  crEl.value = crVal;
+    if (crLbl) crLbl.textContent = crVal + ' cm';
 
     updateModePill();
     updateKeybindDisplay();

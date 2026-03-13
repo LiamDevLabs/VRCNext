@@ -279,18 +279,19 @@ public class AppSettings
     // VR Wrist Overlay settings
     public bool    VroAttachLeft  { get; set; } = true;
     public bool    VroAttachHand  { get; set; } = true;
-    public float   VroPosX        { get; set; } = 0.0f;
-    public float   VroPosY        { get; set; } = 0.07f;
-    public float   VroPosZ        { get; set; } = -0.05f;
-    public float   VroRotX        { get; set; } = -80f;
-    public float   VroRotY        { get; set; } = 0f;
-    public float   VroRotZ        { get; set; } = 0f;
-    public float   VroWidth       { get; set; } = 0.22f;
+    public float   VroPosX        { get; set; } = -0.10f;
+    public float   VroPosY        { get; set; } = -0.03f;
+    public float   VroPosZ        { get; set; } = 0.11f;
+    public float   VroRotX        { get; set; } = -180f;
+    public float   VroRotY        { get; set; } = 46f;
+    public float   VroRotZ        { get; set; } = 85f;
+    public float   VroWidth       { get; set; } = 0.16f;
     public List<uint> VroKeybind       { get; set; } = new();
     public int        VroKeybindHand   { get; set; } = 0; // 0=any, 1=left, 2=right
     public int        VroKeybindMode   { get; set; } = 0; // 0=combo(hold), 1=doubletap
     public List<uint> VroKeybindDt     { get; set; } = new();
     public int        VroKeybindDtHand { get; set; } = 0; // 0=any, 1=left, 2=right for doubletap slot
+    public int        VroControlRadius { get; set; } = 16; // cm, 3–28; 16 = default
 
     // Discord Rich Presence — privacy per status
     public bool DpHideInstIdJoinMe  { get; set; }

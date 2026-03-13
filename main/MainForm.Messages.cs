@@ -3896,7 +3896,8 @@ public partial class MainForm
                             _settings.VroPosX, _settings.VroPosY, _settings.VroPosZ,
                             _settings.VroRotX, _settings.VroRotY, _settings.VroRotZ,
                             _settings.VroWidth, _settings.VroKeybind, _settings.VroKeybindHand,
-                            _settings.VroKeybindMode, _settings.VroKeybindDt, _settings.VroKeybindDtHand);
+                            _settings.VroKeybindMode, _settings.VroKeybindDt, _settings.VroKeybindDtHand,
+                            _settings.VroControlRadius);
 
                         bool ok = _vrOverlay.Connect();
                         if (ok) { _vrOverlay.StartPolling(); PushVroLocations(); }
@@ -3965,20 +3966,22 @@ public partial class MainForm
                         int kbMode    = msg["keybindMode"]?.Value<int>() ?? 0;
                         var kbDt      = msg["keybindDt"]?.ToObject<List<uint>>() ?? new();
                         int kbDtHand  = msg["keybindDtHand"]?.Value<int>() ?? 0;
+                        int ctrlR     = msg["controlRadius"]?.Value<int>() ?? 28;
 
-                        _settings.VroAttachLeft   = left;
-                        _settings.VroAttachHand   = hand;
+                        _settings.VroAttachLeft    = left;
+                        _settings.VroAttachHand    = hand;
                         _settings.VroPosX = px; _settings.VroPosY = py; _settings.VroPosZ = pz;
                         _settings.VroRotX = rx; _settings.VroRotY = ry; _settings.VroRotZ = rz;
-                        _settings.VroWidth        = width;
-                        _settings.VroKeybind      = kb;
-                        _settings.VroKeybindHand  = kbHand;
-                        _settings.VroKeybindMode  = kbMode;
-                        _settings.VroKeybindDt    = kbDt;
+                        _settings.VroWidth         = width;
+                        _settings.VroKeybind       = kb;
+                        _settings.VroKeybindHand   = kbHand;
+                        _settings.VroKeybindMode   = kbMode;
+                        _settings.VroKeybindDt     = kbDt;
                         _settings.VroKeybindDtHand = kbDtHand;
+                        _settings.VroControlRadius = ctrlR;
                         _settings.Save();
 
-                        _vrOverlay?.ApplyConfig(left, hand, px, py, pz, rx, ry, rz, width, kb, kbHand, kbMode, kbDt, kbDtHand);
+                        _vrOverlay?.ApplyConfig(left, hand, px, py, pz, rx, ry, rz, width, kb, kbHand, kbMode, kbDt, kbDtHand, ctrlR);
                     }
                     break;
 
