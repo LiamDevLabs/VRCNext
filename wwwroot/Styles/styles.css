@@ -20,6 +20,7 @@
     --brd-lt: #263755;
     --sidebar-w: 220px;
     --sidebar-c: 60px;
+    --rsidebar-c: 60px;
     --status-online: #2DD48C;
     --status-join:   #42A5F5;
     --status-ask:    #FFA726;
@@ -299,14 +300,13 @@ body {
     padding: 10px 5px;
 }
 
-.sb-toggle {
-    margin-left: auto;
+.sb-toggle, .rs-toggle {
     flex-shrink: 0;
     background: none;
     border: none;
     cursor: pointer;
     color: var(--tx3);
-    padding: 10px 14px;
+    padding: 10px;
     border-radius: 8px;
     display: flex;
     align-items: center;
@@ -316,16 +316,20 @@ body {
     transition: color .15s, background .15s;
 }
 
-.sb-toggle .msi {
+.sb-toggle, .rs-toggle { margin-left: auto; }
+.rs-toggle { margin-left: 0; }
+
+.sb-toggle .msi, .rs-toggle .msi {
     font-size: 20px;
 }
 
-.sb-toggle:hover {
+.sb-toggle:hover, .rs-toggle:hover {
     color: var(--tx1);
     background: rgba(255,255,255,.04);
 }
 
-.sidebar.collapsed .sb-toggle {
+.sidebar.collapsed .sb-toggle,
+.rsidebar.collapsed .rs-toggle {
     margin-left: 0;
     padding: 10px;
 }
@@ -1697,13 +1701,122 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    transition: width .22s ease, min-width .22s ease;
 }
 
+.rsidebar.collapsed {
+    width: var(--rsidebar-c);
+    min-width: var(--rsidebar-c);
+}
+
+
 .rsidebar-header {
-    padding: 14px 16px 10px;
+    padding: 14px 4px 10px 4px;
     display: flex;
     align-items: center;
     gap: 6px;
+}
+
+.rsidebar.collapsed .rsidebar-header {
+    justify-content: center;
+    padding: 10px 4px;
+}
+
+.rsidebar.collapsed .rsidebar-title,
+.rsidebar.collapsed .mi-refresh-btn,
+.rsidebar.collapsed .win-dots { display: none; }
+
+/* Collapsed content */
+.rsidebar.collapsed .rsidebar-content {
+    padding: 4px;
+    overflow-x: hidden;
+}
+
+/* Collapsed — shared thumbnail: profile, instance, friend all same size */
+.rsidebar.collapsed .vrc-avatar,
+.rsidebar.collapsed .vrc-friend-avatar,
+.rsidebar.collapsed .inst-header {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    border: 2.5px solid var(--status-offline);
+    border-radius: 8px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+/* Instance border uses badge colour (same as vrcn-badge) */
+.rsidebar.collapsed .inst-header { cursor: pointer; }
+.rsidebar.collapsed .inst-card[data-inst-type="public"]      .inst-header { border-color: var(--ok); }
+.rsidebar.collapsed .inst-card[data-inst-type="friends"]     .inst-header { border-color: #42A5F5; }
+.rsidebar.collapsed .inst-card[data-inst-type="friendsplus"] .inst-header { border-color: #42A5F5; }
+.rsidebar.collapsed .inst-card[data-inst-type="private"]     .inst-header { border-color: #EF5350; }
+.rsidebar.collapsed .inst-card[data-inst-type="invite"]      .inst-header { border-color: #EF5350; }
+.rsidebar.collapsed .inst-card[data-inst-type="group"]       .inst-header { border-color: #FFA726; }
+.rsidebar.collapsed .inst-card[data-inst-type="hidden"]      .inst-header { border-color: var(--tx2); }
+
+/* Status border overrides — profile + friend combined */
+.rsidebar.collapsed .vrc-profile[data-status="s-active"] .vrc-avatar,
+.rsidebar.collapsed .vrc-profile[data-status="s-online"] .vrc-avatar,
+.rsidebar.collapsed .vrc-friend-card[data-status="s-active"] .vrc-friend-avatar,
+.rsidebar.collapsed .vrc-friend-card[data-status="s-online"] .vrc-friend-avatar { border-color: var(--status-online); }
+
+.rsidebar.collapsed .vrc-profile[data-status="s-join"] .vrc-avatar,
+.rsidebar.collapsed .vrc-friend-card[data-status="s-join"] .vrc-friend-avatar { border-color: var(--status-join); }
+
+.rsidebar.collapsed .vrc-profile[data-status="s-ask"] .vrc-avatar,
+.rsidebar.collapsed .vrc-friend-card[data-status="s-ask"] .vrc-friend-avatar { border-color: var(--status-ask); }
+
+.rsidebar.collapsed .vrc-profile[data-status="s-busy"] .vrc-avatar,
+.rsidebar.collapsed .vrc-friend-card[data-status="s-busy"] .vrc-friend-avatar { border-color: var(--status-busy); }
+
+/* Collapsed containers — all centered, same padding */
+.rsidebar.collapsed .vrc-profile,
+.rsidebar.collapsed .vrc-friend-card {
+    justify-content: center;
+    padding: 3px 4px;
+}
+.rsidebar.collapsed .vrc-profile { background: none; }
+.rsidebar.collapsed .inst-card {
+    display: flex;
+    justify-content: center;
+    background: none;
+    margin-bottom: 4px;
+    padding: 3px 4px;
+}
+
+/* Hide text/detail elements for all 3 */
+.rsidebar.collapsed .vrc-profile-info,
+.rsidebar.collapsed .vrc-profile > .msi,
+.rsidebar.collapsed .vrc-friend-info,
+.rsidebar.collapsed .inst-header > *,
+.rsidebar.collapsed .inst-card > *:not(.inst-header) { display: none; }
+
+/* Collapsed search — icon only, click to expand */
+.rsidebar.collapsed .vrc-friend-search {
+    display: flex !important;
+    justify-content: center;
+    padding: 2px 0;
+    margin-bottom: 2px;
+}
+.rsidebar.collapsed #vrcFriendSearchInput { display: none; }
+
+/* Collapsed section labels — same box as friend cards, short text + chevron */
+.rsidebar.collapsed .vrc-section-label {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 4px;
+    margin-top: 0;
+    letter-spacing: 0;
+}
+.rsidebar.collapsed .vrc-section-text { display: none; }
+.vrc-section-short { display: none; }
+.rsidebar.collapsed .vrc-section-short {
+    display: inline-block;
+    width: 28px;
+    text-align: center;
 }
 
 .win-dots {
@@ -1879,7 +1992,7 @@ body {
     position: relative;
 }
 
-.vrc-fs-icon {
+.rsidebar:not(.collapsed) .vrc-fs-icon {
     position: absolute;
     left: 10px;
     font-size: 14px;
@@ -1887,7 +2000,24 @@ body {
     pointer-events: none;
 }
 
+.rsidebar.collapsed .vrc-fs-icon {
+    position: static;
+    font-size: 20px;
+    color: var(--tx3);
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: color .15s, background .15s;
+}
+
+.rsidebar.collapsed .vrc-fs-icon:hover {
+    color: var(--tx1);
+    background: rgba(255,255,255,.04);
+}
+
 .vrc-section-label {
+    display: flex;
+    align-items: center;
     font-size: 10px;
     font-weight: 700;
     color: var(--tx3);

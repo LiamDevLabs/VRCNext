@@ -1,28 +1,32 @@
-# 2026.10.9
+# 2026.10.10
 
-## Dashboard
+## Friends Sidebar
 
-- Added **Popular Worlds** — browse worlds currently trending in VRChat
-- Added **Active Worlds** — see worlds with the most active players right now
-- Added **Recently Visited** — quickly revisit worlds you have been to before
+The friends sidebar now has a collapse button to minimize it while maintaining important information such as friend status, your profile and current instance.
 
-All three are accessible via the **Discovery** section using the three buttons: **Discovery**, **Popular Worlds**, and **Active Worlds**
+## Voice Fight
 
----
+- Added support for `.wav` files as soundboard playback
+  — Added by @LiamDevLabs
 
-## Sidebar
+## Tool Startup Change
 
-- Fixed alignment of the **Collapse / Hamburger** button so it merges more cleanly with the sidebar
+**Before:** Custom Chatbox, Media Relay, Space Flight, Youtube Fix, Voice Fight, Discord Presence, and VR Overlay were all started when VRCNext launches.
 
----
+This caused unwanted behaviour — for example, launching Space Flight would automatically start SteamVR on desktop, which is not intended.
 
-## Steam Overlay
+**Now:** Tools are no longer started on launch by default. Instead, each tool has two new toggle options:
 
-The Steam Overlay has received a major update with four new features:
+- **Start with VRChat (Desktop)**
+- **Start with VRChat (VR)**
 
-- **Friend Status Feed** — shows the last 4 status updates from your friends
-- **Friend Locations** — see where your friends are and join them directly
-- **Media Player** — control your active media session (Browser, Spotify, etc.) without leaving VR
-- **Quick Tools** — toggle all 6 tools instantly: Space Flight, YouTube Fix, Chatbox, and more
+## JSON Changes
 
-The overlay can be triggered using **any controller keybind of your choice**
+Favorited images were previously stored inside `settings.json`. They are now stored in a dedicated `favorited_images.json` file.
+
+**No action required** — the migration runs automatically and safely on first launch.
+
+## Changes
+
+- Moved the collapse/hamburger icon to the top of the sidebar for easier access
+- Removed the "Beta" badge — VRCNext is now considered stable

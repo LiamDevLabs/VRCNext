@@ -281,7 +281,7 @@ function renderCurrentInstance(data) {
 
     const displayCount = users.length || data.nUsers || 0;
     const prevInstScroll = el.querySelector('.inst-users')?.scrollTop || 0;
-    el.innerHTML = `<div class="inst-card">
+    el.innerHTML = `<div class="inst-card" data-inst-type="${_instCls}">
         <div class="inst-header" style="background-image:url('${cssUrl(data.worldThumb || '')}');cursor:pointer;" onclick="openInstanceInfoModal()">
             <div class="inst-header-fade"></div>
             ${typeBadge}

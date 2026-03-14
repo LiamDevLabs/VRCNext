@@ -81,7 +81,7 @@ function renderVrcProfile(u) {
     const imgTag = img
         ? `<img class="vrc-avatar" src="${img}" onerror="this.style.display='none'">`
         : `<div class="vrc-avatar" style="display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--tx3)">${esc((u.displayName || '?')[0])}</div>`;
-    a.innerHTML = `<div class="vrc-profile" onclick="openMyProfileModal()">${imgTag}<div class="vrc-profile-info"><div class="vrc-profile-name">${esc(u.displayName)}</div><div class="vrc-profile-status"><span class="vrc-status-dot ${statusDotClass(u.status)}"></span>${statusLabel(u.status)}${u.statusDescription ? ' — ' + esc(u.statusDescription) : ''}</div></div><span class="msi" style="font-size:16px;color:var(--tx3);flex-shrink:0;">manage_accounts</span></div>`;
+    a.innerHTML = `<div class="vrc-profile" data-status="${statusDotClass(u.status)}" onclick="openMyProfileModal()">${imgTag}<div class="vrc-profile-info"><div class="vrc-profile-name">${esc(u.displayName)}</div><div class="vrc-profile-status"><span class="vrc-status-dot ${statusDotClass(u.status)}"></span>${statusLabel(u.status)}${u.statusDescription ? ' — ' + esc(u.statusDescription) : ''}</div></div><span class="msi" style="font-size:16px;color:var(--tx3);flex-shrink:0;">manage_accounts</span></div>`;
 }
 
 // My Profile Modal
@@ -387,7 +387,7 @@ function renderVrcFriends(friends, counts) {
         const statusCls = presenceType === 'offline' ? 's-offline' : statusDotClass(f.status);
         const rank = getTrustRank(f.tags || []);
         const rankBadge = rank ? `<span class="vrcn-badge" style="background:${rank.color}22;color:${rank.color};">${rank.label}</span>` : '';
-        return `<div class="vrc-friend-card" onclick="openFriendDetail('${fid}')">${imgTag}<div class="vrc-friend-info"><div class="vrc-friend-name" style="display:flex;align-items:center;gap:5px;"><span class="${dotClass} ${statusCls}" style="width:6px;height:6px;flex-shrink:0;"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(f.displayName)}</span>${rankBadge}</div><div class="vrc-friend-loc">${esc(f.statusDescription || statusLabel(f.status))} · ${esc(loc)}</div></div></div>`;
+        return `<div class="vrc-friend-card" data-status="${statusCls}" onclick="openFriendDetail('${fid}')">${imgTag}<div class="vrc-friend-info"><div class="vrc-friend-name" style="display:flex;align-items:center;gap:5px;"><span class="${dotClass} ${statusCls}" style="width:6px;height:6px;flex-shrink:0;"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(f.displayName)}</span>${rankBadge}</div><div class="vrc-friend-loc">${esc(f.statusDescription || statusLabel(f.status))} · ${esc(loc)}</div></div></div>`;
     }
 
     // Favorites section — all favorited friends (any presence), sorted game > web > offline
@@ -398,7 +398,7 @@ function renderVrcFriends(friends, counts) {
     }) : [];
     if (favFriends.length > 0) {
         const favChev = friendSectionCollapsed.favorites ? 'expand_more' : 'expand_less';
-        h += `<div class="vrc-section-label vrc-offline-toggle" onclick="toggleFriendSection('favorites')" style="cursor:pointer;">FAVORITES — ${favFriends.length} <span class="msi" style="font-size:14px;vertical-align:middle;" id="favoritesChevron">${favChev}</span></div>`;
+        h += `<div class="vrc-section-label vrc-offline-toggle" onclick="toggleFriendSection('favorites')" style="cursor:pointer;"><span class="vrc-section-text">FAVORITES — ${favFriends.length}</span><span class="vrc-section-short">FAV</span><span class="msi" style="font-size:14px;" id="favoritesChevron">${favChev}</span></div>`;
         h += `<div id="favoritesFriendsSection" style="display:${friendSectionCollapsed.favorites ? 'none' : ''};">`;
         favFriends.forEach(f => { h += renderCard(f, f.presence); });
         h += `</div>`;
@@ -406,7 +406,7 @@ function renderVrcFriends(friends, counts) {
 
     if (gameFriends.length > 0) {
         const ingameChev = friendSectionCollapsed.ingame ? 'expand_more' : 'expand_less';
-        h += `<div class="vrc-section-label vrc-offline-toggle" onclick="toggleFriendSection('ingame')" style="cursor:pointer;">IN-GAME — ${gc} <span class="msi" style="font-size:14px;vertical-align:middle;" id="ingameChevron">${ingameChev}</span></div>`;
+        h += `<div class="vrc-section-label vrc-offline-toggle" onclick="toggleFriendSection('ingame')" style="cursor:pointer;"><span class="vrc-section-text">IN-GAME — ${gc}</span><span class="vrc-section-short">GME</span><span class="msi" style="font-size:14px;" id="ingameChevron">${ingameChev}</span></div>`;
         h += `<div id="ingameFriendsSection" style="display:${friendSectionCollapsed.ingame ? 'none' : ''};">`;
         gameFriends.forEach(f => { h += renderCard(f, 'game'); });
         h += `</div>`;
@@ -414,7 +414,7 @@ function renderVrcFriends(friends, counts) {
 
     if (webFriends.length > 0) {
         const webChev = friendSectionCollapsed.web ? 'expand_more' : 'expand_less';
-        h += `<div class="vrc-section-label vrc-offline-toggle" onclick="toggleFriendSection('web')" style="cursor:pointer;">WEB / ACTIVE — ${wc} <span class="msi" style="font-size:14px;vertical-align:middle;" id="webChevron">${webChev}</span></div>`;
+        h += `<div class="vrc-section-label vrc-offline-toggle" onclick="toggleFriendSection('web')" style="cursor:pointer;"><span class="vrc-section-text">WEB / ACTIVE — ${wc}</span><span class="vrc-section-short">WEB</span><span class="msi" style="font-size:14px;" id="webChevron">${webChev}</span></div>`;
         h += `<div id="webFriendsSection" style="display:${friendSectionCollapsed.web ? 'none' : ''};">`;
         webFriends.forEach(f => { h += renderCard(f, 'web'); });
         h += `</div>`;
@@ -422,7 +422,7 @@ function renderVrcFriends(friends, counts) {
 
     if (offlineFriends.length > 0) {
         const offlineChev = friendSectionCollapsed.offline ? 'expand_more' : 'expand_less';
-        h += `<div class="vrc-section-label vrc-offline-toggle" onclick="toggleFriendSection('offline')" style="cursor:pointer;">OFFLINE — ${oc} <span class="msi" style="font-size:14px;vertical-align:middle;" id="offlineChevron">${offlineChev}</span></div>`;
+        h += `<div class="vrc-section-label vrc-offline-toggle" onclick="toggleFriendSection('offline')" style="cursor:pointer;"><span class="vrc-section-text">OFFLINE — ${oc}</span><span class="vrc-section-short">OFF</span><span class="msi" style="font-size:14px;" id="offlineChevron">${offlineChev}</span></div>`;
         h += `<div id="offlineFriendsSection" style="display:${friendSectionCollapsed.offline ? 'none' : ''};">`;
         offlineFriends.forEach(f => { h += renderCard(f, 'offline'); });
         h += `</div>`;

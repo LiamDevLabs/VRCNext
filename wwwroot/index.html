@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="sidebar" id="sidebarEl">
-        <div class="logo"><div class="logo-icon" id="logoIcon">V</div><div class="logo-txt"><div class="logo-text-row"><div class="logo-text">VRCNext</div></div><div class="logo-sub">v2026.10.9</div></div><button class="sb-toggle" onclick="toggleSidebar()" title="Toggle sidebar"><span class="msi" id="sbIcon">menu_open</span></button></div>
+        <div class="logo"><div class="logo-icon" id="logoIcon">V</div><div class="logo-txt"><div class="logo-text-row"><div class="logo-text">VRCNext</div></div><div class="logo-sub">v2026.10.9</div></div><button class="sb-toggle" onclick="toggleSidebar()" title="Toggle sidebar"><span class="msi" id="sbIcon">chevron_left</span></button></div>
         <div class="nav">
             <button class="nav-btn active" onclick="showTab(0)"><span class="ni msi">dashboard</span><span class="nl">Dashboard</span></button>
             <button class="nav-btn" onclick="showTab(1)"><span class="ni msi">travel_explore</span><span class="nl">Worlds</span></button>
@@ -1130,12 +1130,12 @@
     </div>
 
     <div class="rsidebar" id="rsidebar">
-        <div class="rsidebar-header"><span class="rsidebar-title">FRIENDS</span><button class="mi-refresh-btn" onclick="vrcRefresh()" title="Refresh">&#8635;</button><div class="win-dots" data-windows-only><button class="win-dot win-dot-min" onclick="sendToCS({action:'windowMinimize'})" title="Minimize"></button><button class="win-dot win-dot-max" onclick="sendToCS({action:'windowMaximize'})" title="Maximize"></button><button class="win-dot win-dot-close" onclick="sendToCS({action:'windowClose'})" title="Close"></button></div></div>
+        <div class="rsidebar-header"><button class="rs-toggle" onclick="toggleRsidebar()" title="Toggle panel"><span class="msi" id="rsIcon">chevron_right</span></button><span class="rsidebar-title">FRIENDS</span><button class="mi-refresh-btn" onclick="vrcRefresh()" title="Refresh">&#8635;</button><div class="win-dots" data-windows-only><button class="win-dot win-dot-min" onclick="sendToCS({action:'windowMinimize'})" title="Minimize"></button><button class="win-dot win-dot-max" onclick="sendToCS({action:'windowMaximize'})" title="Maximize"></button><button class="win-dot win-dot-close" onclick="sendToCS({action:'windowClose'})" title="Close"></button></div></div>
         <div class="rsidebar-content" id="vrcPanel">
             <div id="vrcProfileArea"></div>
             <div id="vrcInstanceArea"></div>
             <div id="vrcFriendSearch" class="vrc-friend-search" style="display:none;">
-                <span class="msi vrc-fs-icon">search</span>
+                <span class="msi vrc-fs-icon" onclick="if(rsidebarCollapsed)toggleRsidebar()">search</span>
                 <input type="text" id="vrcFriendSearchInput" class="vrcn-input" placeholder="Search friends..." oninput="filterFriendsList()">
             </div>
             <div id="vrcFriendsList">

@@ -6,13 +6,20 @@ try { hiddenMedia = new Set(JSON.parse(localStorage.getItem('vrcnext_hidden') ||
 const thumbCache = {};
 let currentTheme = 'midnight', currentSpecialTheme = '', autoColorAccuracy = 50, notifyAudio = null, currentVrcUser = null;
 let sidebarCollapsed = localStorage.getItem('vrcnext_sidebar') === '1';
+let rsidebarCollapsed = localStorage.getItem('vrcnext_rsidebar') === '1';
 // Apply saved sidebar state immediately on load
 (function() {
     const sidebar = document.getElementById('sidebarEl');
     if (sidebar && sidebarCollapsed) {
         sidebar.classList.add('collapsed');
         const icon = document.getElementById('sbIcon');
-        if (icon) icon.textContent = 'menu';
+        if (icon) icon.textContent = 'chevron_right';
+    }
+    const rs = document.getElementById('rsidebar');
+    if (rs && rsidebarCollapsed) {
+        rs.classList.add('collapsed');
+        const rsIcon = document.getElementById('rsIcon');
+        if (rsIcon) rsIcon.textContent = 'chevron_left';
     }
 })();
 let dashBgPath = '', dashBgDataUri = '', dashOpacity = 40;
@@ -133,11 +140,19 @@ function sk(type, n = 1) {
     const fn = t[type]; return fn ? Array.from({length: n}, fn).join('') : '';
 }
 
+function toggleRsidebar() {
+    rsidebarCollapsed = !rsidebarCollapsed;
+    localStorage.setItem('vrcnext_rsidebar', rsidebarCollapsed ? '1' : '0');
+    const rs = document.getElementById('rsidebar');
+    document.getElementById('rsIcon').textContent = rsidebarCollapsed ? 'chevron_left' : 'chevron_right';
+    rs.classList.toggle('collapsed', rsidebarCollapsed);
+}
+
 function toggleSidebar() {
     sidebarCollapsed = !sidebarCollapsed;
     localStorage.setItem('vrcnext_sidebar', sidebarCollapsed ? '1' : '0');
     const sidebar = document.getElementById('sidebarEl');
-    document.getElementById('sbIcon').textContent = sidebarCollapsed ? 'menu' : 'menu_open';
+    document.getElementById('sbIcon').textContent = sidebarCollapsed ? 'chevron_right' : 'chevron_left';
     if (sidebarCollapsed) {
         sidebar.classList.add('collapsing');
         setTimeout(() => {
